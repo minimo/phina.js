@@ -2700,7 +2700,7 @@ phina.namespace(function() {
         },
         sound: function(key, path) {
           var sound = phina.asset.Sound();
-          var flow = audio.load(path);
+          var flow = sound.load(path);
           return flow;
         },
         spritesheet: function(key, path) {
