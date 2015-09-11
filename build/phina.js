@@ -1119,6 +1119,8 @@ phina.namespace(function() {
 
     return _class;
   });
+  
+  var _classDefinedCallback = {};
 
   /**
    * @member phina
@@ -1129,7 +1131,20 @@ phina.namespace(function() {
   phina.method('define', function(path, params) {
     if (params.superClass) {
       if (typeof params.superClass === 'string') {
-        params.superClass = phina.using(params.superClass);
+        var _superClass = phina.using(params.superClass);
+        if (typeof _superClass != 'function') {
+          if (_classDefinedCallback[params.superClass] == null) {
+            _classDefinedCallback[params.superClass] = [];
+          }
+          _classDefinedCallback[params.superClass].push(function() {
+            phina.define(path, params);
+          });
+
+          return ;
+        }
+        else {
+          params.superClass = _superClass;
+        }
       }
       else {
         params.superClass = params.superClass;
@@ -1144,6 +1159,13 @@ phina.namespace(function() {
     });
 
     phina.register(path, _class);
+    
+    if (_classDefinedCallback[path]) {
+      _classDefinedCallback[path].forEach(function(callback) {
+        callback();
+      });
+      _classDefinedCallback[path] = null;
+    }
 
     return _class;
   });
