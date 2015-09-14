@@ -68,6 +68,7 @@
     "ui/button.js",
 
     "game/managerscene.js",
+    "game/splashscene.js",
     "game/titlescene.js",
     "game/resultscene.js",
     "game/countscene.js",
