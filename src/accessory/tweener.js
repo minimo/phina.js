@@ -70,7 +70,7 @@ phina.namespace(function() {
       return this;
     },
 
-    moveBy: function(props, duration, easing) {
+    moveBy: function(x, y, duration, easing) {
       this._add({
         type: 'tween',
         mode: 'from',
