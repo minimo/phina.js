@@ -59,6 +59,50 @@ phina.namespace(function() {
       return this;
     },
 
+    move: function(x, y, duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {x: x, y: y},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    moveBy: function(props, duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'from',
+        props: {x: x, y: y},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    fadeIn: function(duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {alpha: 1.0},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    fadeOut: function(duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {alpha: 0.0},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
     call: function(func, self, args) {
       this._add({
         type: 'call',
