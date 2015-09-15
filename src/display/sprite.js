@@ -42,6 +42,26 @@ phina.namespace(function() {
         -this.width*this.originX, -this.height*this.originY, this.width, this.height
         );
     },
+
+    setFrameIndex: function(index, width, height) {
+      var tw  = width || this.width;      // tw
+      var th  = height || this.height;    // th
+      var row = ~~(this.image.domElement.width / tw);
+      var col = ~~(this.image.domElement.height / th);
+      var maxIndex = row*col;
+      index = index%maxIndex;
+      
+      var x   = index%row;
+      var y   = ~~(index/row);
+      this.srcRect.x = x*tw;
+      this.srcRect.y = y*th;
+      this.srcRect.width  = tw;
+      this.srcRect.height = th;
+
+      this._frameIndex = index;
+
+      return this;
+    },
   });
 
 });
