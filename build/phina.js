@@ -2722,12 +2722,8 @@ phina.namespace(function() {
         },
         font: function(key, path) {
           var font = phina.asset.Font();
-<<<<<<< HEAD
-          return font.load(key, path);
-=======
           font.setFontName(key);
           return font.load(path);
->>>>>>> develop
         },
       }
     }
@@ -3156,15 +3152,6 @@ phina.namespace(function() {
      */
     init: function() {
       this.superInit();
-<<<<<<< HEAD
-    },
-
-    load: function(key, path) {
-      this.src = path;
-      this.key = key;
-
-      var reg = /(.*)(?:\.([^.]+$))/;
-=======
       this.fontName = null;
     },
 
@@ -3173,7 +3160,6 @@ phina.namespace(function() {
 
       var reg = /(.*)(?:\.([^.]+$))/;
       var key = this.fontName || path.match(reg)[1];    //フォント名指定が無い場合はpathの拡張子前を使用
->>>>>>> develop
       var type = path.match(reg)[2];
       var format = "unknown";
       switch (type) {
@@ -3189,10 +3175,7 @@ phina.namespace(function() {
             console.warn("サポートしていないフォント形式です。(" + path + ")");
       }
       this.format = format;
-<<<<<<< HEAD
-=======
       this.fontName = key;
->>>>>>> develop
 
       if (format !== "unknown") {
         var text = "@font-face { font-family: '{0}'; src: url({1}) format('{2}'); }".format(key, path, format);
@@ -3211,11 +3194,7 @@ phina.namespace(function() {
 
     _load: function(resolve) {
       if (this.format !== "unknown") {
-<<<<<<< HEAD
-        this.checkLoaded(this.key, function() {
-=======
         this._checkLoaded(this.fontName, function() {
->>>>>>> develop
           this.loaded = true;
           resolve(this);
         }.bind(this));
@@ -3225,11 +3204,7 @@ phina.namespace(function() {
       }
     },
 
-<<<<<<< HEAD
-    checkLoaded: function (font, callback) {
-=======
     _checkLoaded: function (font, callback) {
->>>>>>> develop
       var canvas = phina.graphics.Canvas();
       var DEFAULT_FONT = canvas.context.font.split(' ')[1];
       canvas.context.font = '40px ' + DEFAULT_FONT;
@@ -3248,8 +3223,6 @@ phina.namespace(function() {
       };
       setTimeout(checkLoadFont, 100);
     },
-<<<<<<< HEAD
-=======
 
     setFontName: function(name) {
         if (this.loaded) {
@@ -3264,7 +3237,6 @@ phina.namespace(function() {
         return this.fontName;
     },
 
->>>>>>> develop
   });
 });
 
@@ -4689,6 +4661,50 @@ phina.namespace(function() {
       return this;
     },
 
+    move: function(x, y, duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {x: x, y: y},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    moveBy: function(x, y, duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'from',
+        props: {x: x, y: y},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    fadeIn: function(duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {alpha: 1.0},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
+    fadeOut: function(duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'to',
+        props: {alpha: 0.0},
+        duration: duration,
+        easing: easing,
+      });
+      return this;
+    },
+
     call: function(func, self, args) {
       this._add({
         type: 'call',
@@ -6032,6 +6048,26 @@ phina.namespace(function() {
         srcRect.x, srcRect.y, srcRect.width, srcRect.height,
         -this.width*this.originX, -this.height*this.originY, this.width, this.height
         );
+    },
+
+    setFrameIndex: function(index, width, height) {
+      var tw  = width || this.width;      // tw
+      var th  = height || this.height;    // th
+      var row = ~~(this.image.domElement.width / tw);
+      var col = ~~(this.image.domElement.height / th);
+      var maxIndex = row*col;
+      index = index%maxIndex;
+      
+      var x   = index%row;
+      var y   = ~~(index/row);
+      this.srcRect.x = x*tw;
+      this.srcRect.y = y*th;
+      this.srcRect.width  = tw;
+      this.srcRect.height = th;
+
+      this._frameIndex = index;
+
+      return this;
     },
   });
 
