@@ -73,7 +73,7 @@ phina.namespace(function() {
     moveBy: function(x, y, duration, easing) {
       this._add({
         type: 'tween',
-        mode: 'from',
+        mode: 'by',
         props: {x: x, y: y},
         duration: duration,
         easing: easing,
@@ -243,8 +243,11 @@ phina.namespace(function() {
         if (task.mode === 'to') {
           this._tween.to(this.target, task.props, task.duration, task.easing);
         }
-        else {
+        else if (task.mode === 'from') {
           this._tween.from(this.target, task.props, task.duration, task.easing);
+        }
+        else {
+          this._tween.by(this.target, task.props, task.duration, task.easing);
         }
         this._update = this._updateTween;
         this._update(app);
