@@ -73,7 +73,7 @@ phina.namespace(function() {
     moveBy: function(props, duration, easing) {
       this._add({
         type: 'tween',
-        mode: 'from',
+        mode: 'by',
         props: {x: x, y: y},
         duration: duration,
         easing: easing,
