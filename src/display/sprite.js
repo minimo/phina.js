@@ -8,7 +8,7 @@ phina.namespace(function() {
   phina.define('phina.display.Sprite', {
     superClass: 'phina.display.CanvasElement',
 
-    init: function(image) {
+    init: function(image, width, height) {
       this.superInit();
 
       if (typeof image === 'string') {
@@ -16,8 +16,9 @@ phina.namespace(function() {
       }
       
       this.image = image;
-      this.width = this.image.domElement.width;
-      this.height = this.image.domElement.height;
+      this.width = width || this.image.domElement.width;
+      this.height = height || this.image.domElement.height;
+      this._frameIndex = 0;
 
       this.srcRect = {
         x: 0,
@@ -61,6 +62,16 @@ phina.namespace(function() {
       this._frameIndex = index;
 
       return this;
+    },
+
+    _access: {
+      frameIndex: {
+        get: function() {return this._frameIndex;},
+        set: function(idx) {
+          this.setFrameIndex(idx);
+          return this;
+        }
+      },
     },
   });
 
