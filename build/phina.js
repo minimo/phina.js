@@ -5045,7 +5045,7 @@ phina.namespace(function() {
             return ;
           }
           else {
-            this.pause = true;
+            this.paused = true;
             this.finished = true;
             return ;
           }
