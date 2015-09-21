@@ -14,11 +14,17 @@ th.describe("display.Shape", function() {
 th.describe("display.Label", function() {
 
   th.it('init', function() {
-    var label = phina.display.Label('Hello, world!').addChildTo(this);
-    label.position.set(640/2, 960/2);
-
-    var shape = phina.display.Shape().addChildTo(this);
-    shape.position.set(200, 200);
+    var label = phina.display.Label('text only').addChildTo(this);
+    label.position.set(this.gridX.center(), this.gridY.span(6));
+    var label = phina.display.Label('text and style', {
+      color: 'red',
+    }).addChildTo(this);
+    label.position.set(this.gridX.center(), this.gridY.span(8));
+    var label = phina.display.Label({
+      text: 'object only',
+      color: 'blue',
+    }).addChildTo(this);
+    label.position.set(this.gridX.center(), this.gridY.span(10));
   });
 
   th.it('style', function() {
@@ -131,14 +137,17 @@ th.describe("display.Layer", function() {
     var SCREEN_WIDTH = 640;
     var SCREEN_HEIGHT = 960;
     var layer = phina.display.Layer({
-      width: 300,
-      height: 300,
+      width: 400,
+      height: 400,
     }).addChildTo(this);
 
-    layer.x = 128;
-    layer.y = 128;
+    layer.x = 320;
+    layer.y = 480;
+    layer.backgroundColor = 'blue';
 
-    var circle = phina.display.CircleShape().addChildTo(layer);
+    var circle = phina.display.CircleShape({
+      radius: 150,
+    }).addChildTo(layer);
   });
 });
 

@@ -38,6 +38,18 @@ phina.namespace(function() {
       return this;
     },
 
+    by: function(props, duration, easing) {
+      this._add({
+        type: 'tween',
+        mode: 'by',
+        props: props,
+        duration: duration,
+        easing: easing,
+      });
+
+      return this;
+    },
+
     from: function(props, duration, easing) {
       this._add({
         type: 'tween',
@@ -55,50 +67,6 @@ phina.namespace(function() {
         data: {
           limit: time,
         },
-      });
-      return this;
-    },
-
-    move: function(x, y, duration, easing) {
-      this._add({
-        type: 'tween',
-        mode: 'to',
-        props: {x: x, y: y},
-        duration: duration,
-        easing: easing,
-      });
-      return this;
-    },
-
-    moveBy: function(x, y, duration, easing) {
-      this._add({
-        type: 'tween',
-        mode: 'by',
-        props: {x: x, y: y},
-        duration: duration,
-        easing: easing,
-      });
-      return this;
-    },
-
-    fadeIn: function(duration, easing) {
-      this._add({
-        type: 'tween',
-        mode: 'to',
-        props: {alpha: 1.0},
-        duration: duration,
-        easing: easing,
-      });
-      return this;
-    },
-
-    fadeOut: function(duration, easing) {
-      this._add({
-        type: 'tween',
-        mode: 'to',
-        props: {alpha: 0.0},
-        duration: duration,
-        easing: easing,
       });
       return this;
     },
@@ -137,6 +105,25 @@ phina.namespace(function() {
       });
 
       return this;
+    },
+
+    moveTo: function(x, y, duration, easing) {
+      return this.to({x:x,y:y}, duration, easing);
+    },
+    moveBy: function(x, y, duration, easing) {
+      return this.by({x:x,y:y}, duration, easing);
+    },
+
+    fade: function(value, duration, easing) {
+      return this.to({alpha:value}, duration, easing);
+    },
+
+    fadeOut: function(duration, easing) {
+      return this.fade(0.0, duration, easing)
+    },
+
+    fadeIn: function(duration, easing) {
+      return this.fade(1.0, duration, easing)
     },
 
     /**
@@ -243,11 +230,11 @@ phina.namespace(function() {
         if (task.mode === 'to') {
           this._tween.to(this.target, task.props, task.duration, task.easing);
         }
-        else if (task.mode === 'from') {
-          this._tween.from(this.target, task.props, task.duration, task.easing);
+        else if (task.mode === 'by') {
+          this._tween.by(this.target, task.props, task.duration, task.easing);
         }
         else {
-          this._tween.by(this.target, task.props, task.duration, task.easing);
+          this._tween.from(this.target, task.props, task.duration, task.easing);
         }
         this._update = this._updateTween;
         this._update(app);

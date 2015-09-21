@@ -12,7 +12,10 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(params) {
-      this.superInit(params.query);
+      if (!params.query && !params.domElement) {
+        params.domElement = document.createElement('canvas');
+      }
+      this.superInit(params);
 
       params.$safe({
         width: 640,
@@ -40,6 +43,12 @@ phina.namespace(function() {
       }));
 
       this.fitScreen();
+
+      // pushScene, popScene 対策
+      this.on('push', function() {
+        // onenter 対策で描画しておく
+        this._draw();
+      });
     },
 
     _draw: function() {
@@ -52,8 +61,12 @@ phina.namespace(function() {
       if (this.currentScene.canvas) {
         this.currentScene._render();
 
-        var c = this.currentScene.canvas;
-        this.canvas.context.drawImage(c.domElement, 0, 0, c.width, c.height);
+        this._scenes.each(function(scene) {
+          var c = scene.canvas;
+          if (c) {
+            this.canvas.context.drawImage(c.domElement, 0, 0, c.width, c.height);
+          }
+        }, this);
       }
     },
 
