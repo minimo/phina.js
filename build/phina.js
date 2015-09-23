@@ -3587,15 +3587,15 @@ phina.namespace(function() {
       var format = "unknown";
       switch (type) {
         case "ttf":
-            format = "truetype"; break;
+          format = "truetype"; break;
         case "otf":
-            format = "opentype"; break;
+          format = "opentype"; break;
         case "woff":
-            format = "woff"; break;
+          format = "woff"; break;
         case "woff2":
-            format = "woff2"; break;
+          format = "woff2"; break;
         default:
-            console.warn("サポートしていないフォント形式です。(" + path + ")");
+          console.warn("サポートしていないフォント形式です。(" + path + ")");
       }
       this.format = format;
       this.fontName = key;
@@ -3636,18 +3636,24 @@ phina.namespace(function() {
       // 特殊文字対応
       checkText += String.fromCharCode("0xf04b");
 
-
       var before = canvas.context.measureText(checkText).width;
       canvas.context.font = '40px ' + font + ', ' + DEFAULT_FONT;
 
+      var timeoutCount = 30;
       var checkLoadFont = function () {
         if (canvas.context.measureText(checkText).width !== before) {
           callback && callback();
         } else {
-          setTimeout(checkLoadFont, 100);
+          if (--timeoutCount > 0) {
+            setTimeout(checkLoadFont, 100);
+          }
+          else {
+            callback && callback();
+            console.warn("timeout font loading");
+          }
         }
       };
-      setTimeout(checkLoadFont, 100);
+      checkLoadFont();
     },
 
     setFontName: function(name) {
@@ -3884,21 +3890,22 @@ phina.namespace(function() {
     /**
      * @constructor
      */
-    init: function(domElement) {
+    init: function(domElement, isMulti) {
       this.superInit(domElement);
 
       this.id = null;
 
-      return ;
+      if (isMulti === true) {
+        return ;
+      }
 
       var self = this;
       this.domElement.addEventListener('touchstart', function(e) {
-        self._move(e.pointX, e.pointY, true);
-        self.flags = 1;
+        self._start(e.pointX, e.pointY, true);
       });
 
       this.domElement.addEventListener('touchend', function(e) {
-        self.flags = 0;
+        self._end();
       });
       this.domElement.addEventListener('touchmove', function(e) {
         self._move(e.pointX, e.pointY);
@@ -3960,7 +3967,7 @@ phina.namespace(function() {
       this.stockes = [];
 
       (length).times(function() {
-        var touch = phina.input.Touch(domElement);
+        var touch = phina.input.Touch(domElement, true);
         touch.id = null;
         this.stockes.push(touch);
       }, this);
@@ -7127,7 +7134,7 @@ phina.namespace(function() {
       this.canvas = phina.graphics.Canvas();
       this.canvas.setSize(params.width, params.height);
       this.renderer = phina.display.CanvasRenderer(this.canvas);
-      this.backgroundColor = null;
+      this.backgroundColor = (params.backgroundColor) ? params.backgroundColor : null;
       
       this.gridX = phina.util.Grid(params.width, 16);
       this.gridY = phina.util.Grid(params.height, 16);
