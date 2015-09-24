@@ -19,20 +19,20 @@ phina.namespace(function() {
       this.src = path;
 
       var reg = /(.*)(?:\.([^.]+$))/;
-      var key = this.fontName || path.match(reg)[1];    //フォント名指定が無い場合はpathの拡張子前を使用
+      var key = this.fontName || path.match(reg)[1].split('/').last;    //フォント名指定が無い場合はpathの拡張子前を使用
       var type = path.match(reg)[2];
       var format = "unknown";
       switch (type) {
         case "ttf":
-            format = "truetype"; break;
+          format = "truetype"; break;
         case "otf":
-            format = "opentype"; break;
+          format = "opentype"; break;
         case "woff":
-            format = "woff"; break;
+          format = "woff"; break;
         case "woff2":
-            format = "woff2"; break;
+          format = "woff2"; break;
         default:
-            console.warn("サポートしていないフォント形式です。(" + path + ")");
+          console.warn("サポートしていないフォント形式です。(" + path + ")");
       }
       this.format = format;
       this.fontName = key;
@@ -73,31 +73,41 @@ phina.namespace(function() {
       // 特殊文字対応
       checkText += String.fromCharCode("0xf04b");
 
-
       var before = canvas.context.measureText(checkText).width;
       canvas.context.font = '40px ' + font + ', ' + DEFAULT_FONT;
 
+      var timeoutCount = 30;
       var checkLoadFont = function () {
-        if (canvas.context.measureText(checkText).width !== before) {
-          callback && callback();
+        var after = canvas.context.measureText(checkText).width;
+        if (after !== before) {
+          setTimeout(function() {
+            callback && callback();
+          }, 100);
         } else {
-          setTimeout(checkLoadFont, 100);
+          if (--timeoutCount > 0) {
+            setTimeout(checkLoadFont, 100);
+          }
+          else {
+            callback && callback();
+            console.warn("timeout font loading");
+          }
         }
       };
-      setTimeout(checkLoadFont, 100);
+      checkLoadFont();
     },
 
     setFontName: function(name) {
-        if (this.loaded) {
-            console.warn("フォント名はLoad前にのみ設定が出来ます(" + name + ")");
-            return this;
-        }
-        this.fontName = name;
+      if (this.loaded) {
+        console.warn("フォント名はLoad前にのみ設定が出来ます(" + name + ")");
         return this;
+      }
+      this.fontName = name;
+      
+      return this;
     },
 
     getFontName: function() {
-        return this.fontName;
+      return this.fontName;
     },
 
   });

@@ -3582,20 +3582,20 @@ phina.namespace(function() {
       this.src = path;
 
       var reg = /(.*)(?:\.([^.]+$))/;
-      var key = this.fontName || path.match(reg)[1];    //フォント名指定が無い場合はpathの拡張子前を使用
+      var key = this.fontName || path.match(reg)[1].split('/').last;    //フォント名指定が無い場合はpathの拡張子前を使用
       var type = path.match(reg)[2];
       var format = "unknown";
       switch (type) {
         case "ttf":
-            format = "truetype"; break;
+          format = "truetype"; break;
         case "otf":
-            format = "opentype"; break;
+          format = "opentype"; break;
         case "woff":
-            format = "woff"; break;
+          format = "woff"; break;
         case "woff2":
-            format = "woff2"; break;
+          format = "woff2"; break;
         default:
-            console.warn("サポートしていないフォント形式です。(" + path + ")");
+          console.warn("サポートしていないフォント形式です。(" + path + ")");
       }
       this.format = format;
       this.fontName = key;
@@ -3636,31 +3636,41 @@ phina.namespace(function() {
       // 特殊文字対応
       checkText += String.fromCharCode("0xf04b");
 
-
       var before = canvas.context.measureText(checkText).width;
       canvas.context.font = '40px ' + font + ', ' + DEFAULT_FONT;
 
+      var timeoutCount = 30;
       var checkLoadFont = function () {
-        if (canvas.context.measureText(checkText).width !== before) {
-          callback && callback();
+        var after = canvas.context.measureText(checkText).width;
+        if (after !== before) {
+          setTimeout(function() {
+            callback && callback();
+          }, 100);
         } else {
-          setTimeout(checkLoadFont, 100);
+          if (--timeoutCount > 0) {
+            setTimeout(checkLoadFont, 100);
+          }
+          else {
+            callback && callback();
+            console.warn("timeout font loading");
+          }
         }
       };
-      setTimeout(checkLoadFont, 100);
+      checkLoadFont();
     },
 
     setFontName: function(name) {
-        if (this.loaded) {
-            console.warn("フォント名はLoad前にのみ設定が出来ます(" + name + ")");
-            return this;
-        }
-        this.fontName = name;
+      if (this.loaded) {
+        console.warn("フォント名はLoad前にのみ設定が出来ます(" + name + ")");
         return this;
+      }
+      this.fontName = name;
+      
+      return this;
     },
 
     getFontName: function() {
-        return this.fontName;
+      return this.fontName;
     },
 
   });
@@ -3884,21 +3894,22 @@ phina.namespace(function() {
     /**
      * @constructor
      */
-    init: function(domElement) {
+    init: function(domElement, isMulti) {
       this.superInit(domElement);
 
       this.id = null;
 
-      return ;
+      if (isMulti === true) {
+        return ;
+      }
 
       var self = this;
       this.domElement.addEventListener('touchstart', function(e) {
-        self._move(e.pointX, e.pointY, true);
-        self.flags = 1;
+        self._start(e.pointX, e.pointY, true);
       });
 
       this.domElement.addEventListener('touchend', function(e) {
-        self.flags = 0;
+        self._end();
       });
       this.domElement.addEventListener('touchmove', function(e) {
         self._move(e.pointX, e.pointY);
@@ -3960,7 +3971,7 @@ phina.namespace(function() {
       this.stockes = [];
 
       (length).times(function() {
-        var touch = phina.input.Touch(domElement);
+        var touch = phina.input.Touch(domElement, true);
         touch.id = null;
         this.stockes.push(touch);
       }, this);
@@ -7127,8 +7138,10 @@ phina.namespace(function() {
       this.canvas = phina.graphics.Canvas();
       this.canvas.setSize(params.width, params.height);
       this.renderer = phina.display.CanvasRenderer(this.canvas);
-      this.backgroundColor = null;
+      this.backgroundColor = (params.backgroundColor) ? params.backgroundColor : null;
       
+      this.width = params.width;
+      this.height = params.height;
       this.gridX = phina.util.Grid(params.width, 16);
       this.gridY = phina.util.Grid(params.height, 16);
 
@@ -8045,6 +8058,74 @@ phina.namespace(function() {
 });
 
 /*
+ * LoadingScene
+ */
+
+
+phina.namespace(function() {
+
+  /**
+   * @class phina.game.LoadingScene
+   * 
+   */
+  phina.define('phina.game.LoadingScene', {
+    superClass: 'phina.display.CanvasScene',
+
+    /**
+     * @constructor
+     */
+    init: function(options) {
+      options = (options || {}).$safe(phina.game.LoadingScene.defaults);
+      this.superInit(options);
+
+      this.fromJSON({
+        children: {
+          bar: {
+            className: 'phina.display.Shape',
+            arguments: {
+              width: this.width,
+              height: 6,
+              backgroundColor: 'hsla(200, 100%, 80%, 0.8)',
+            },
+            originX: 0,
+            originY: 0,
+            x: 0,
+            y: 0,
+          },
+        }
+      });
+
+
+      var loader = phina.asset.AssetLoader();
+      
+      this.bar.scaleX = 0;
+      loader.onprogress = function(e) {
+        this.bar.scaleX = e.progress;
+      }.bind(this);
+      
+      loader.onload = function() {
+        if (options.exitType === 'auto') {
+          this.app.popScene();
+        }
+      }.bind(this);
+
+      loader.load(options.assets);
+    },
+
+    _static: {
+      defaults: {
+        width: 640,
+        height: 960,
+
+        exitType: 'auto',
+      },
+    },
+
+  });
+
+});
+
+/*
  * CountScene
  */
 
@@ -8156,42 +8237,52 @@ phina.namespace(function() {
   phina.define('phina.game.GameApp', {
     superClass: 'phina.display.CanvasApp',
 
-    init: function(params) {
-      this.superInit(params);
+    init: function(options) {
+      this.superInit(options);
+
+      var startLabel = (options.assets) ? 'loading' : options.startLabel;
 
       var scene = ManagerScene({
-        startLabel: params.startLabel,
+        startLabel: startLabel,
 
         scenes: [
           {
-            className: "SplashScene",
-            arguments: {
-              width: params.width,
-              height: params.height,
-            },
-            label: "splash",
-            nextLabel: "title",
+            className: 'LoadingScene',
+            arguments: options,
+            label: 'loading',
+            nextLabel: options.startLabel,
           },
-          
+
+          {
+            className: 'SplashScene',
+            arguments: options,
+            label: 'splash',
+            nextLabel: 'title',
+          },
+
           {
             className: 'TitleScene',
+            arguments: options,
             label: 'title',
             nextLabel: 'main',
           },
           {
             className: 'MainScene',
+            arguments: options,
             label: 'main',
             nextLabel: 'result',
           },
           {
             className: 'ResultScene',
+            arguments: options,
             label: 'result',
             nextLabel: 'title',
           },
 
           {
-            className: "PauseScene",
-            label: "pause",
+            className: 'PauseScene',
+            arguments: options,
+            label: 'pause',
           },
 
         ]

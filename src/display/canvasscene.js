@@ -15,8 +15,10 @@ phina.namespace(function() {
       this.canvas = phina.graphics.Canvas();
       this.canvas.setSize(params.width, params.height);
       this.renderer = phina.display.CanvasRenderer(this.canvas);
-      this.backgroundColor = null;
+      this.backgroundColor = (params.backgroundColor) ? params.backgroundColor : null;
       
+      this.width = params.width;
+      this.height = params.height;
       this.gridX = phina.util.Grid(params.width, 16);
       this.gridY = phina.util.Grid(params.height, 16);
 
