@@ -90,6 +90,34 @@ phina.namespace(function() {
           return this;
         }
       },
+      frameTrimX: {
+        get: function() {return this._frameTrimY;},
+        set: function(x) {
+          this._frameTrimX = x;
+          return this;
+        }
+      },
+      frameTrimY: {
+        get: function() {return this._frameTrimY;},
+        set: function(y) {
+          this._frameTrimY = y;
+          return this;
+        }
+      },
+      frameTrimW: {
+        get: function() {return this._frameTrimW;},
+        set: function(w) {
+          this._frameTrimW = w;
+          return this;
+        }
+      },
+      frameTrimH: {
+        get: function() {return this._frameTrimH;},
+        set: function(h) {
+          this._frameTrimH = h;
+          return this;
+        }
+      },
     },
   });
 
