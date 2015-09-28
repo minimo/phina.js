@@ -2427,8 +2427,9 @@ phina.namespace(function() {
       return this.unitWidth;
     },
 
-    center: function() {
-      return this.width/2;
+    center: function(offset) {
+      var index = offset || 0;
+      return (this.width/2) + (this.unitWidth * index);
     },
 
   });
@@ -3323,16 +3324,24 @@ phina.namespace(function() {
      */
     clone: function() {
       var sound = phina.asset.Sound();
-      sound.loadFromBuffer(this.source.buffer);
+      sound.loadFromBuffer(this.buffer);
       sound.volume = this.volume;
       return sound;
     },
 
     play: function() {
+      if (this.source) {
+        // TODO: キャッシュする？
+      }
+
+      this.source = this.context.createBufferSource();
+      this.source.buffer = this.buffer;
+      // connect
+      this.source.connect(this.context.destination);
       // play
       this.source.start(0);
 
-      // cache play end
+      // check play end
       if (this.source.buffer) {
         var time = (this.source.buffer.duration/this.source.playbackRate.value)*1000;
         window.setTimeout(function(self) {
@@ -3340,6 +3349,11 @@ phina.namespace(function() {
         }, time, this);
       }
 
+      return this;
+    },
+
+    stop: function() {
+      this.source.stop();
       return this;
     },
 
@@ -3359,8 +3373,6 @@ phina.namespace(function() {
       this.source = oscillator;
       // connect
       this.source.connect(context.destination);
-
-      this
     },
 
     loadFromBuffer: function(buffer) {
@@ -3378,12 +3390,7 @@ phina.namespace(function() {
       }
 
       // source
-      var source = context.createBufferSource();
-      source.buffer = buffer;
-      this.source = source;
-
-      // connect
-      this.source.connect(context.destination);
+      this.buffer = buffer;
     },
 
     _load: function(r) {
@@ -4192,7 +4199,12 @@ phina.namespace(function() {
 
     _static: {
       /** ブラウザがGamepad APIに対応しているか. */
-      isAvailable: (!!navigator.getGamepads) || (!!navigator.webkitGetGamepads),
+      isAvailable: (function() {
+        var nav = phina.global.navigator;
+        if (!nav) return false;
+
+        return (!!nav.getGamepads) || (!!nav.webkitGetGamepads);
+      })(),
     },
 
   });
@@ -4404,7 +4416,12 @@ phina.namespace(function() {
 
     _static: {
       /** ブラウザがGamepad APIに対応しているか. */
-      isAvailable: (!!navigator.getGamepads) || (!!navigator.webkitGetGamepads),
+      isAvailable: (function() {
+        var nav = phina.global.navigator;
+        if (!nav) return false;
+
+        return (!!nav.getGamepads) || (!!nav.webkitGetGamepads);
+      })(),
 
       /** アナログ入力対応のボタンの場合、どの程度まで押し込むとonになるかを表すしきい値. */
       ANALOGUE_BUTTON_THRESHOLD: 0.5,
@@ -4858,6 +4875,32 @@ phina.namespace(function() {
       currentScene: {
         "get": function()   { return this._scenes[this._sceneIndex]; },
         "set": function(v)  { this._scenes[this._sceneIndex] = v; },
+      },
+
+      frame: {
+        "get": function () { return this.ticker.frame; },
+        "set": function (v) { this.ticker.frame = v; },
+      },
+
+      fps: {
+        "get": function () { return this.ticker.fps; },
+        "set": function (v) { this.ticker.fps = v; },
+      },
+
+      deltaTime: {
+        "get": function () { return this.ticker.deltaTime; },
+      },
+
+      elapsedTime: {
+        "get": function () { return this.ticker.elapsedTime; },
+      },
+
+      currentTime: {
+        "get": function () { return this.ticker.currentTime; },
+      },
+
+      startTime: {
+        "get": function () { return this.ticker.startTime; },
       },
     },
 
@@ -5774,6 +5817,8 @@ phina.namespace(function() {
       }
       else {
         tween.forward(time);
+
+        this.flare('tween');
       }
     },
 
@@ -6602,6 +6647,20 @@ phina.namespace(function() {
       return this;
     },
 
+    /**
+     * 画像として保存
+     */
+    saveAsImage: function(mime_type) {
+      mime_type = mime_type || "image/png";
+      var data_url = this.canvas.toDataURL(mime_type);
+      // data_url = data_url.replace(mime_type, "image/octet-stream");
+      window.open(data_url, "save");
+      
+      // toDataURL を使えば下記のようなツールが作れるかも!!
+      // TODO: プログラムで絵をかいて保存できるツール
+    },
+
+
     _accessor: {
       /**
        * 幅
@@ -6714,15 +6773,17 @@ phina.namespace(function() {
     /** 子供を CanvasRenderer で描画するか */
     childrenVisible: true,
 
-    init: function() {
+    init: function(options) {
+      options = (options || {});
+      
       this.superInit();
 
       this.visible = true;
       this.alpha = 1.0;
       this._worldAlpha = 1.0;
 
-      this.width = 64;
-      this.height = 64;
+      this.width = options.width || 64;
+      this.height = options.height || 64;
     },
 
     /**
@@ -6779,21 +6840,29 @@ phina.namespace(function() {
     superClass: 'phina.display.CanvasElement',
 
     init: function(style) {
-      this.superInit();
-
       style = (style || {}).$safe({
         width: 64,
         height: 64,
         padding: 8,
         backgroundColor: '#aaa',
       });
-
-      this.canvas = phina.graphics.Canvas();
       this.style = phina.util.ChangeDispatcher();
       this.style.register(style);
+
+      this.superInit(style);
+
+      this.canvas = phina.graphics.Canvas();
+      this._dirtyDraw = true;
       this.style.onchange = function() {
-        this._render();
+        this._dirtyDraw = true;
       }.bind(this);
+
+      this.on('enterframe', function() {
+        if (this._dirtyDraw === true) {
+          this._render();
+          this._dirtyDraw = false;
+        }
+      });
 
       this._render();
     },
@@ -6814,6 +6883,27 @@ phina.namespace(function() {
         0, 0, w, h,
         -w*this.origin.x, -h*this.origin.y, w, h
         );
+    },
+
+    _accessor: {
+      width: {
+        get: function() {
+          return this._width;
+        },
+        set: function(v) {
+          this._width = v;
+          this.style.width = v;
+        },
+      },
+      height: {
+        get: function() {
+          return this._height;
+        },
+        set: function(v) {
+          this._height = v;
+          this.style.height = v;
+        },
+      },
     },
   });
 
@@ -6981,7 +7071,7 @@ phina.namespace(function() {
       return this;
     },
 
-    _access: {
+    _accessor: {
       frameIndex: {
         get: function() {return this._frameIndex;},
         set: function(idx) {
@@ -7443,38 +7533,42 @@ phina.namespace(function() {
     /**
      * @constructor
      */
-    init: function(params) {
-      if (!params.query && !params.domElement) {
-        params.domElement = document.createElement('canvas');
-      }
-      this.superInit(params);
-
-      params.$safe({
+    init: function(options) {
+      options.$safe({
         width: 640,
         height: 960,
         columns: 12,
+        fit: true,
       });
+      
+      if (!options.query && !options.domElement) {
+        options.domElement = document.createElement('canvas');
+      }
+      this.superInit(options);
+
 
       this.gridX = phina.util.Grid({
-        width: params.width,
-        columns: params.columns,
+        width: options.width,
+        columns: options.columns,
       });
       this.gridY = phina.util.Grid({
-        width: params.height,
-        columns: params.columns,
+        width: options.height,
+        columns: options.columns,
       });
 
       this.canvas = phina.graphics.Canvas(this.domElement);
-      this.canvas.setSize(params.width, params.height);
+      this.canvas.setSize(options.width, options.height);
 
       this.backgroundColor = 'white';
 
       this.replaceScene(phina.display.CanvasScene({
-        width: params.width,
-        height: params.height,
+        width: options.width,
+        height: options.height,
       }));
 
-      this.fitScreen();
+      if (options.fit) {
+        this.fitScreen();
+      }
 
       // pushScene, popScene 対策
       this.on('push', function() {
@@ -8080,30 +8174,42 @@ phina.namespace(function() {
 
       this.fromJSON({
         children: {
-          bar: {
-            className: 'phina.display.Shape',
+          gauge: {
+            className: 'phina.game.Gauge',
             arguments: {
+              value: 0,
               width: this.width,
-              height: 6,
-              backgroundColor: 'hsla(200, 100%, 80%, 0.8)',
+              height: 12,
+              color: '#aaa',
+              stroke: false,
+              gaugeColor: 'hsla(200, 100%, 80%, 0.8)',
+              padding: 0,
             },
-            originX: 0,
-            originY: 0,
-            x: 0,
+            x: this.gridX.center(),
             y: 0,
-          },
+            originY: 0,
+          }
         }
       });
 
-
       var loader = phina.asset.AssetLoader();
-      
-      this.bar.scaleX = 0;
-      loader.onprogress = function(e) {
-        this.bar.scaleX = e.progress;
-      }.bind(this);
-      
-      loader.onload = function() {
+
+      if (options.lie) {
+        this.gauge.animationTime = 10*1000;
+        this.gauge.value = 90;
+
+        loader.onload = function() {
+          this.gauge.animationTime = 1*1000;
+          this.gauge.value = 100;
+        }.bind(this);
+      }
+      else {
+        loader.onprogress = function(e) {
+          this.gauge.value = e.progress*100;
+        }.bind(this);
+      }
+
+      this.gauge.onfull = function() {
         if (options.exitType === 'auto') {
           this.app.popScene();
         }
@@ -8118,6 +8224,8 @@ phina.namespace(function() {
         height: 960,
 
         exitType: 'auto',
+
+        lie: true,
       },
     },
 
@@ -8238,6 +8346,10 @@ phina.namespace(function() {
     superClass: 'phina.display.CanvasApp',
 
     init: function(options) {
+
+      options = (options || {}).$safe({
+        startLabel: 'title',
+      });
       this.superInit(options);
 
       var startLabel = (options.assets) ? 'loading' : options.startLabel;
@@ -8377,6 +8489,147 @@ phina.namespace(function() {
           this._render();
         },
       }
+    }
+  });
+
+});
+
+phina.namespace(function() {
+
+  /**
+   * @class phina.game.Gauge
+   * 
+   */
+  phina.define('phina.game.Gauge', {
+    superClass: 'phina.display.Shape',
+
+    init: function(style) {
+      style = (style || {}).$safe({
+        value: 100,
+        maxValue: 100,
+        gaugeColor: '#44f',
+
+        width: 256,
+        height: 32,
+
+        color: 'white',
+        radius: 64,
+
+        stroke: true,
+        strokeWidth: 4,
+        strokeColor: '#aaa',
+
+        cornerRadius: 4,
+
+        backgroundColor: 'transparent',
+      });
+
+      this.superInit(style);
+
+      this.visualValue = style.value;
+      this.animation = true;
+      this.animationTime = 1*1000;
+    },
+
+    /**
+     * 満タンかをチェック
+     */
+    isFull: function() {
+      return this.value === this.maxValue;
+    },
+
+    /**
+     * 空っぽかをチェック
+     */
+    isEmpty: function() {
+      return this.value == 0;
+    },
+
+    setValue: function(value) {
+      value = Math.clamp(value, 0, this._maxValue);
+
+      // end when now value equal value of argument
+      if (this.value === value) return ;
+
+      // fire value change event
+      this.flare('change');
+
+      if (this.animation) {
+        var range = Math.abs(this.visualValue-value);
+        var time = (range/this.maxValue)*this.animationTime;
+
+        this.tweener.ontween = function() {
+          this._dirtyDraw = true;
+        }.bind(this);
+        this.tweener
+          .clear()
+          .to({'visualValue': value}, time)
+          .call(function() {
+            this.flare('changed');
+            if (this.isEmpty()) {
+              this.flare('empty');
+            }
+            else if (this.isFull()) {
+              this.flare('full');
+            }
+          }, this);
+      }
+      else {
+        this.visualValue = value;
+        this.flare('changed');
+        if (this.isEmpty()) {
+          this.flare('empty');
+        }
+        else if (this.isFull()) {
+          this.flare('full');
+        }
+      }
+
+      this.style.value = value;
+    },
+
+    _render: function() {
+      var style = this.style;
+      this.canvas.width = style.width + style.padding*2;
+      this.canvas.height= style.height + style.padding*2;
+      // 
+      this.canvas.clearColor(style.backgroundColor);
+
+      this.canvas.transformCenter();
+
+      var rate = this.visualValue/this.maxValue;
+
+      // draw color
+      this.canvas.context.fillStyle = style.color;
+      this.canvas.fillRect(-style.width/2, -style.height/2, style.width, style.height);
+      // draw gauge
+      this.canvas.context.fillStyle = style.gaugeColor;
+      this.canvas.fillRect(-style.width/2, -style.height/2, style.width*rate, style.height);
+      // draw stroke
+      if (style.stroke) {
+        this.canvas.context.lineWidth = style.strokeWidth;
+        this.canvas.strokeStyle = style.strokeColor;
+        this.canvas.strokeRect(-style.width/2, -style.height/2, style.width, style.height);
+      }
+    },
+
+    _accessor: {
+      value: {
+        get: function() {
+          return this.style.value;
+        },
+        set: function(v) {
+          this.setValue(v);
+        },
+      },
+      maxValue: {
+        get: function() {
+          return this.style.maxValue;
+        },
+        set: function(v) {
+          this.style.maxValue = v;
+        },
+      },
     }
   });
 
