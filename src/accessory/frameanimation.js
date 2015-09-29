@@ -85,5 +85,18 @@ phina.namespace(function() {
       target.width = frame.width;
       target.height = frame.height;
     },
+    
+    _accessor: {
+      currentAnimationName: {
+        get: function() {
+          if (this.currentAnimation) {
+            return this.currentAnimation.name;
+          } else {
+            return nul;
+          }
+        },
+        set: function(name) {return this;}
+      },
+    },
   });
 });
