@@ -23,9 +23,9 @@ phina.namespace(function() {
       this.width = params.width;
       this.height = params.height;
 
-      this.setInteractive(true, 'rect');
+      this.setInteractive(true);
 
-      this.on('pointingend', function() {
+      this.on('pointend', function() {
         this.flare('push');
       });
     },
@@ -36,7 +36,7 @@ phina.namespace(function() {
 phina.namespace(function() {
 
   /**
-   * @class phina.geom.Button
+   * @class phina.ui.Button
    * Button
    */
   phina.define('phina.ui.Button', {
@@ -49,29 +49,44 @@ phina.namespace(function() {
 
       params = (params || {}).$safe({
         text: 'Hello',
-        color: 'white',
+        fontColor: 'white',
         backgroundColor: 'hsl(200, 80%, 60%)',
         cornerRadius: 8,
         fontSize: 32,
-      });
-
-      this.setInteractive(true, 'rect');
-      this.on('pointend', function() {
-        this.flare('push');
       });
 
       this.bg = phina.display.RectangleShape({
         width: this.width,
         height: this.height,
         cornerRadius: params.cornerRadius,
-        color: params.backgroundColor,
+        fill: params.backgroundColor,
         stroke: false,
       }).addChildTo(this);
-      this.label = phina.display.Label(params.text, {
-        color: params.color,
+      this.label = phina.display.Label({
+        text: params.text,
+        fill: params.fontColor,
         stroke: false,
         fontSize: params.fontSize,
       }).addChildTo(this);
+    },
+
+    _accessor: {
+      text: {
+        "get": function()   { return this.label.text; },
+        "set": function(v)  { this.label.text = v; },
+      },
+
+      fontSize: {
+        "set": function(v)  { this.label.fontSize = v; },
+      },
+
+      fontColor: {
+        "set": function (v) { this.label.color = v; },
+      },
+
+      backgroundColor: {
+        "set": function (v) { this.bg.color = v; },
+      },
     },
   });
 
@@ -81,11 +96,11 @@ phina.namespace(function() {
 phina.namespace(function() {
 
   /**
-   * @class phina.geom.Button
+   * @class phina.ui.FlatButton
    * Button
    */
   phina.define('phina.ui.FlatButton', {
-    superClass: 'phina.display.CanvasElement',
+    superClass: 'phina.ui.BaseButton',
     /**
      * @constructor
      */
@@ -102,15 +117,30 @@ phina.namespace(function() {
       this.height = params.height;
 
       this.bg = phina.display.RectangleShape().addChildTo(this);
-      this.bg.style.$extend({
+      this.bg.$extend({
         width: params.width,
         height: params.height,
       });
       this.label = phina.display.Label('hoge').addChildTo(this);
-      
-      this.setInteractive(true, 'rect');
+    },
+    _accessor: {
+      text: {
+        "get": function()   { return this.label.text; },
+        "set": function(v)  { this.label.text = v; },
+      },
+
+      fontSize: {
+        "set": function(v)  { this.label.fontSize = v; },
+      },
+
+      fontColor: {
+        "set": function (v) { this.label.color = v; },
+      },
+
+      backgroundColor: {
+        "set": function (v) { this.bg.color = v; },
+      },
     },
   });
 
 });
-

@@ -3691,6 +3691,8 @@ phina.namespace(function() {
    */
   phina.define('phina.input.Input', {
 
+    superClass: 'phina.util.EventDispatcher',
+
     /** domElement */
     domElement: null,
 
@@ -3698,6 +3700,8 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(domElement) {
+      this.superInit();
+      
       this.domElement = domElement || window.document;
 
       this.position = phina.geom.Vector2(0, 0);
@@ -4047,6 +4051,479 @@ phina.namespace(function() {
   })
 
 })();
+/*
+ *
+ */
+
+
+phina.namespace(function() {
+
+  /**
+   * @class phina.input.Keyboard
+   * @extends phina.input.Input
+   */
+  phina.define('phina.input.Keyboard', {
+
+    superClass: 'phina.input.Input',
+
+    /**
+     * @constructor
+     */
+    init: function(domElement) {
+      this.superInit(domElement);
+
+      this.key = {};
+      this.press  = {};
+      this.down   = {};
+      this.up     = {};
+      this.last   = {};
+
+      var self = this;
+      this.domElement.addEventListener('keydown', function(e) {
+        self.key[e.keyCode] = true;
+        self.flare('keydown', {
+          keyCode: e.keyCode,
+        });
+      });
+
+      this.domElement.addEventListener('keyup', function(e) {
+        self.key[e.keyCode] = false;
+        self.flare('keyup', {
+          keyCode: e.keyCode,
+        });
+      });
+      this.domElement.addEventListener('keypress', function(e) {
+        self.flare('keypress', {
+          keyCode: e.keyCode,
+        });
+      });
+    },
+
+    /**
+     * 情報更新処理
+     * マイフレーム呼んで下さい.
+     * @private
+     */
+    update: function() {
+      // TODO: 一括ビット演算で行うよう修正する
+      for (var k in this.key) {
+        this.last[k]    = this.press[k];
+        this.press[k]   = this.key[k];
+        
+        this.down[k] = (this.press[k] ^ this.last[k]) & this.press[k];
+        this.up[k] = (this.press[k] ^ this.last[k]) & this.last[k];
+      }
+      
+      return this;
+    },
+
+    /**
+     * キーを押しているかをチェック
+     * @param   {Number/String} key keyCode or keyName
+     * @returns {Boolean}   チェック結果
+     */
+    getKey: function(key) {
+      if (typeof(key) === "string") {
+        key = phina.input.Keyboard.KEY_CODE[key];
+      }
+      return !!this.press[key] === true;
+    },
+    
+    /**
+     * キーを押したかをチェック
+     * @param   {Number/String} key keyCode or keyName
+     * @returns {Boolean}   チェック結果
+     */
+    getKeyDown: function(key) {
+      if (typeof(key) == "string") {
+        key = phina.input.Keyboard.KEY_CODE[key];
+      }
+      return this.down[key] == true;
+    },
+    
+    /**
+     * キーを離したかをチェック
+     * @param   {Number/String} key keyCode or keyName
+     * @returns {Boolean}   チェック結果
+     */
+    getKeyUp: function(key) {
+      if (typeof(key) == "string") {
+        key = phina.input.Keyboard.KEY_CODE[key];
+      }
+      return this.up[key] == true;
+    },
+    
+    /**
+     * キーの方向を Angle(Degree) で取得
+     * @returns {Boolean}   角度(Degree)
+     */
+    getKeyAngle: function() {
+      var angle = null;
+      var arrowBit =
+        (this.getKey("left")   << 3) | // 1000
+        (this.getKey("up")     << 2) | // 0100
+        (this.getKey("right")  << 1) | // 0010
+        (this.getKey("down"));         // 0001
+      
+      if (arrowBit != 0 && phina.input.Keyboard.ARROW_BIT_TO_ANGLE_TABLE.hasOwnProperty(arrowBit)) {
+        angle = phina.input.Keyboard.ARROW_BIT_TO_ANGLE_TABLE[arrowBit];
+      }
+      
+      return angle;
+    },
+
+    /**
+     * キーの押している向きを取得
+     * 正規化されている
+     */
+    getKeyDirection: function() {
+      var direction = tm.geom.Vector2(0, 0);
+
+      if (this.getKey("left")) {
+        direction.x = -1;
+      }
+      else if (this.getKey("right")) {
+        direction.x = 1;
+      }
+      if (this.getKey("up")) {
+        direction.y = -1;
+      }
+      else if (this.getKey("down")) {
+        direction.y = 1;
+      }
+
+      if (direction.x && direction.y) {
+        direction.div(Math.SQRT2);
+      }
+
+      return direction;
+    },
+    
+    /**
+     * キーの状態を設定する
+     */
+    setKey: function(key, flag) {
+      if (typeof(key) == "string") {
+        key = KEY_CODE[key];
+      }
+      this.key[key] = flag;
+      
+      return this;
+    },
+
+    /**
+     * キーを全て離したことにする
+     */
+    clearKey: function() {
+      this.key = {};
+      
+      return this;
+    },
+
+
+    /*
+     * @enum ARROW_BIT_TO_ANGLE_TABLE
+     * 方向のアングル jsduckでは数字をプロパティに指定できない？
+     * @private
+     */
+    _static: {
+      ARROW_BIT_TO_ANGLE_TABLE: {
+        /* @property 下 */
+        0x01: 270,
+        /* @property 右 */
+        0x02:   0,
+        /* @property 上 */
+        0x04:  90,
+        /* @property 左 */
+        0x08: 180,
+
+        /* @property 右上 */
+        0x06:  45,
+        /* @property 右下 */
+        0x03: 315,
+        /* @property 左上 */
+        0x0c: 135,
+        /* @property 左下 */
+        0x09: 225,
+
+        // 三方向同時押し対応
+        // 想定外の操作だが対応しといたほうが無難
+        /* @property 右上左 */
+        0x0e:  90,
+        /* @property 上左下 */
+        0x0d: 180,
+        /* @property 左下右 */
+        0x0b: 270,
+        /* @property 下右上 */
+        0x07:   0,
+      },
+
+      /*
+       * @enum KEY_CODE
+       * キー番号
+       * @private
+       */
+      KEY_CODE: {
+        /* @property */
+        "backspace" : 8,
+        /* @property */
+        "tab"       : 9,
+        /* @property */
+        "enter"     : 13,
+        /* @property */
+        "return"    : 13,
+        /* @property */
+        "shift"     : 16,
+        /* @property */
+        "ctrl"      : 17,
+        /* @property */
+        "alt"       : 18,
+        /* @property */
+        "pause"     : 19,
+        /* @property */
+        "capslock"  : 20,
+        /* @property */
+        "escape"    : 27,
+        /* @property */
+        "pageup"    : 33,
+        /* @property */
+        "pagedown"  : 34,
+        /* @property */
+        "end"       : 35,
+        /* @property */
+        "home"      : 36,
+        /* @property */
+        "left"      : 37,
+        /* @property */
+        "up"        : 38,
+        /* @property */
+        "right"     : 39,
+        /* @property */
+        "down"      : 40,
+        /* @property */
+        "insert"    : 45,
+        /* @property */
+        "delete"    : 46,
+        
+        /* @property */
+        "0" : 48,
+        /* @property */
+        "1" : 49,
+        /* @property */
+        "2" : 50,
+        /* @property */
+        "3" : 51,
+        /* @property */
+        "4" : 52,
+        /* @property */
+        "5" : 53,
+        /* @property */
+        "6" : 54,
+        /* @property */
+        "7" : 55,
+        /* @property */
+        "8" : 56,
+        /* @property */
+        "9" : 57,
+        /* @property */
+        
+        "a" : 65,
+        /* @property */
+        "A" : 65,
+        /* @property */
+        "b" : 66,
+        /* @property */
+        "B" : 66,
+        /* @property */
+        "c" : 67,
+        /* @property */
+        "C" : 67,
+        /* @property */
+        "d" : 68,
+        /* @property */
+        "D" : 68,
+        /* @property */
+        "e" : 69,
+        /* @property */
+        "E" : 69,
+        /* @property */
+        "f" : 70,
+        /* @property */
+        "F" : 70,
+        /* @property */
+        "g" : 71,
+        /* @property */
+        "G" : 71,
+        /* @property */
+        "h" : 72,
+        /* @property */
+        "H" : 72,
+        /* @property */
+        "i" : 73,
+        /* @property */
+        "I" : 73,
+        /* @property */
+        "j" : 74,
+        /* @property */
+        "J" : 74,
+        /* @property */
+        "k" : 75,
+        /* @property */
+        "K" : 75,
+        /* @property */
+        "l" : 76,
+        /* @property */
+        "L" : 76,
+        /* @property */
+        "m" : 77,
+        /* @property */
+        "M" : 77,
+        /* @property */
+        "n" : 78,
+        /* @property */
+        "N" : 78,
+        /* @property */
+        "o" : 79,
+        /* @property */
+        "O" : 79,
+        /* @property */
+        "p" : 80,
+        /* @property */
+        "P" : 80,
+        /* @property */
+        "q" : 81,
+        /* @property */
+        "Q" : 81,
+        /* @property */
+        "r" : 82,
+        /* @property */
+        "R" : 82,
+        /* @property */
+        "s" : 83,
+        /* @property */
+        "S" : 83,
+        /* @property */
+        "t" : 84,
+        /* @property */
+        "T" : 84,
+        /* @property */
+        "u" : 85,
+        /* @property */
+        "U" : 85,
+        /* @property */
+        "v" : 86,
+        /* @property */
+        "V" : 86,
+        /* @property */
+        "w" : 87,
+        /* @property */
+        "W" : 87,
+        /* @property */
+        "x" : 88,
+        /* @property */
+        "X" : 88,
+        /* @property */
+        "y" : 89,
+        /* @property */
+        "Y" : 89,
+        /* @property */
+        "z" : 90,
+        /* @property */
+        "Z" : 90,
+        
+        /* @property */
+        "numpad0" : 96,
+        /* @property */
+        "numpad1" : 97,
+        /* @property */
+        "numpad2" : 98,
+        /* @property */
+        "numpad3" : 99,
+        /* @property */
+        "numpad4" : 100,
+        /* @property */
+        "numpad5" : 101,
+        /* @property */
+        "numpad6" : 102,
+        /* @property */
+        "numpad7" : 103,
+        /* @property */
+        "numpad8" : 104,
+        /* @property */
+        "numpad9" : 105,
+        /* @property */
+        "multiply"      : 106,
+        /* @property */
+        "add"           : 107,
+        /* @property */
+        "subtract"      : 109,
+        /* @property */
+        "decimalpoint"  : 110,
+        /* @property */
+        "divide"        : 111,
+
+        /* @property */
+        "f1"    : 112,
+        /* @property */
+        "f2"    : 113,
+        /* @property */
+        "f3"    : 114,
+        /* @property */
+        "f4"    : 115,
+        /* @property */
+        "f5"    : 116,
+        /* @property */
+        "f6"    : 117,
+        /* @property */
+        "f7"    : 118,
+        /* @property */
+        "f8"    : 119,
+        /* @property */
+        "f9"    : 120,
+        /* @property */
+        "f10"   : 121,
+        /* @property */
+        "f11"   : 122,
+        /* @property */
+        "f12"   : 123,
+        
+        /* @property */
+        "numlock"   : 144,
+        /* @property */
+        "scrolllock": 145,
+        /* @property */
+        "semicolon" : 186,
+        /* @property */
+        "equalsign" : 187,
+        /* @property */
+        "comma"     : 188,
+        /* @property */
+        "dash"      : 189,
+        /* @property */
+        "period"    : 190,
+        /* @property */
+        "forward slash" : 191,
+        /* @property */
+        "/": 191,
+        /* @property */
+        "grave accent"  : 192,
+        /* @property */
+        "open bracket"  : 219,
+        /* @property */
+        "back slash"    : 220,
+        /* @property */
+        "close bracket"  : 221,
+        /* @property */
+        "single quote"  : 222,
+        /* @property */
+        "space"         : 32
+
+      },
+    }
+  });
+
+});
+
 phina.namespace(function() {
 
   /**
@@ -6839,23 +7316,34 @@ phina.namespace(function() {
   phina.define('phina.display.Shape', {
     superClass: 'phina.display.CanvasElement',
 
-    init: function(style) {
-      style = (style || {}).$safe({
+    init: function(options) {
+      options = (options || {}).$safe({
         width: 64,
         height: 64,
         padding: 8,
-        backgroundColor: '#aaa',
-      });
-      this.style = phina.util.ChangeDispatcher();
-      this.style.register(style);
 
-      this.superInit(style);
+        backgroundColor: '#aaa',
+        fill: '#00a',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        shadow: false,
+        shadowBlur: 4,
+      });
+      this.superInit(options);
+
+      this.padding = options.padding;
+
+      this.backgroundColor = options.backgroundColor;
+      this.fill = options.fill;
+      this.stroke = options.stroke;
+      this.strokeWidth = options.strokeWidth;
+      
+      this.shadow = options.shadow;
+      this.shadowBlur = options.shadowBlur;
 
       this.canvas = phina.graphics.Canvas();
       this._dirtyDraw = true;
-      this.style.onchange = function() {
-        this._dirtyDraw = true;
-      }.bind(this);
 
       this.on('enterframe', function() {
         if (this._dirtyDraw === true) {
@@ -6863,16 +7351,13 @@ phina.namespace(function() {
           this._dirtyDraw = false;
         }
       });
-
-      this._render();
     },
 
     _render: function() {
-      var style = this.style;
-      this.canvas.width = style.width + style.padding*2;
-      this.canvas.height= style.height + style.padding*2;
+      this.canvas.width = this.width + this.padding*2;
+      this.canvas.height= this.height + this.padding*2;
 
-      this.canvas.clearColor(style.backgroundColor);
+      this.canvas.clearColor(this.backgroundColor);
     },
 
     draw: function(canvas) {
@@ -6891,8 +7376,7 @@ phina.namespace(function() {
           return this._width;
         },
         set: function(v) {
-          this._width = v;
-          this.style.width = v;
+          this._dirtyDraw = true; this._width = v;
         },
       },
       height: {
@@ -6900,8 +7384,69 @@ phina.namespace(function() {
           return this._height;
         },
         set: function(v) {
-          this._height = v;
-          this.style.height = v;
+          this._dirtyDraw = true; this._height = v;
+        },
+      },
+      padding: {
+        get: function() {
+          return this._padding;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._padding = v;
+        },
+      },
+      backgroundColor: {
+        get: function() {
+          return this._backgroundColor;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._backgroundColor = v;
+        },
+      },
+      fill: {
+        get: function() {
+          return this._fill;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._fill = v;
+        },
+      },
+      stroke: {
+        get: function() {
+          return this._stroke;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._stroke = v;
+        },
+      },
+      strokeWidth: {
+        get: function() {
+          return this._strokeWidth;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._strokeWidth = v;
+        },
+      },
+      shadow: {
+        get: function() {
+          return this._shadow;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._shadow = v;
+        },
+      },
+      shadowBlur: {
+        get: function() {
+          return this._shadowBlur;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this._shadowBlur = v;
         },
       },
     },
@@ -6913,40 +7458,49 @@ phina.namespace(function() {
    */
   phina.define('phina.display.RectangleShape', {
     superClass: 'phina.display.Shape',
-    init: function(style) {
+    init: function(options) {
 
-      style = (style || {}).$safe({
-        color: 'blue',
-
-        stroke: true,
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
+        fill: 'blue',
+        stroke: '#aaa',
         strokeWidth: 4,
-        strokeColor: '#aaa',
 
         cornerRadius: 0,
-
-        backgroundColor: 'transparent',
       });
+      this.superInit(options);
 
-      this.superInit(style);
+      this.cornerRadius = options.cornerRadius;
     },
 
     _render: function() {
-      var style = this.style;
-      this.canvas.width = style.width + style.padding*2;
-      this.canvas.height= style.height + style.padding*2;
-      this.canvas.clearColor(style.backgroundColor);
+      this.canvas.width = this.width + this.padding*2;
+      this.canvas.height= this.height + this.padding*2;
+      this.canvas.clearColor(this.backgroundColor);
 
       this.canvas.transformCenter();
 
-      if (style.stroke) {
-        this.canvas.context.lineWidth = style.strokeWidth;
-        this.canvas.strokeStyle = style.strokeColor;
-        this.canvas.strokeRoundRect(-style.width/2, -style.height/2, style.width, style.height, style.cornerRadius);
+      if (this.stroke) {
+        this.canvas.context.lineWidth = this.strokeWidth;
+        this.canvas.strokeStyle = this.stroke;
+        this.canvas.strokeRoundRect(-this.width/2, -this.height/2, this.width, this.height, this.cornerRadius);
       }
 
-      this.canvas.context.fillStyle = style.color;
-      this.canvas.fillRoundRect(-style.width/2, -style.height/2, style.width, style.height, style.cornerRadius);
+      this.canvas.context.fillStyle = this.fill;
+      this.canvas.fillRoundRect(-this.width/2, -this.height/2, this.width, this.height, this.cornerRadius);
     },
+
+    _accessor: {
+      cornerRadius: {
+        get: function() {
+          return this._cornerRadius;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._cornerRadius = v;
+        },
+      }
+    },
+
   });
 
   /**
@@ -6955,48 +7509,44 @@ phina.namespace(function() {
    */
   phina.define('phina.display.CircleShape', {
     superClass: 'phina.display.Shape',
-    init: function(style) {
-      style = (style || {}).$safe({
-        color: 'red',
-        radius: 32,
-
-        stroke: true,
-        strokeWidth: 4,
-        strokeColor: '#aaa',
-
-        cornerRadius: 0,
-
+    init: function(options) {
+      options = (options || {}).$safe({
         backgroundColor: 'transparent',
-      });
+        fill: 'red',
+        stroke: '#aaa',
+        strokeWidth: 4,
 
-      this.superInit(style);
+        radius: 32,
+      });
+      this.superInit(options);
+
+      this.radius = options.radius;
     },
 
     _render: function() {
-      var style = this.style;
-      this.canvas.width = style.radius*2 + style.padding*2;
-      this.canvas.height= style.radius*2 + style.padding*2;
-      this.canvas.clearColor(style.backgroundColor);
+      this.canvas.width = this.radius*2 + this.padding*2;
+      this.canvas.height= this.radius*2 + this.padding*2;
+      this.canvas.clearColor(this.backgroundColor);
 
       this.canvas.transformCenter();
 
-      if (style.stroke) {
-        this.canvas.context.lineWidth = style.strokeWidth;
-        this.canvas.strokeStyle = style.strokeColor;
-        this.canvas.strokeCircle(0, 0, style.radius);
+      if (this.stroke) {
+        this.canvas.context.lineWidth = this.strokeWidth;
+        this.canvas.strokeStyle = this.stroke;
+        this.canvas.strokeCircle(0, 0, this.radius);
       }
 
-      this.canvas.context.fillStyle = style.color;
-      this.canvas.fillCircle(0, 0, style.radius);
+      this.canvas.context.fillStyle = this.fill;
+      this.canvas.fillCircle(0, 0, this.radius);
     },
 
     _accessor: {
       radius: {
         get: function() {
-          return this.style.radius;
+          return this._radius;
         },
         set: function(v) {
-          this.style.radius = v;
+          this._dirtyDraw = true; this._radius = v;
         },
       }
     },
@@ -7095,43 +7645,42 @@ phina.namespace(function() {
   phina.define('phina.display.Label', {
     superClass: 'phina.display.Shape',
 
-    init: function(text, style) {
-
-      if (arguments.length >= 2) {
-        style.text = text;
+    init: function(options) {
+      if (typeof arguments[0] === 'string') {
+        options = { text: arguments[0], };
       }
       else {
-        if (typeof arguments[0] === 'string') {
-          style = { text: text, };
-        }
-        else {
-          style = arguments[0];
-        }
+        options = arguments[0];
       }
 
-      style = (style || {}).$safe({
-        text: 'Hello, world!',
-        color: 'black',
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
 
-        stroke: true,
-        strokeColor: '#222',
+        fill: 'black',
+        stroke: '#222',
         strokeWidth: 2,
 
+        // 
+        text: 'Hello, world!',
+        // 
         fontSize: 32,
         fontWeight: '',
         fontFamily: "'HiraKakuProN-W3'", // Hiragino or Helvetica,
-
-        shadowBlur: 0,
-        shadowColor: 'black',
-
+        // 
         align: 'center',
         baseline: 'middle',
         lineHeight: 1.2,
-
-        backgroundColor: 'transparent',
       });
 
-      this.superInit(style);
+      this.superInit(options);
+
+      this.text = options.text;
+      this.fontSize = options.fontSize;
+      this.fontWeight = options.fontWeight;
+      this.fontFamily = options.fontFamily;
+      this.align = options.align;
+      this.baseline = options.baseline;
+      this.lineHeight = options.lineHeight;
     },
 
     calcWidth: function() {
@@ -7143,54 +7692,55 @@ phina.namespace(function() {
           width = w;
         }
       }, this);
-      if (this.style.align !== 'center') width*=2;
+      if (this.align !== 'center') width*=2;
       return width;
     },
 
     calcHeight: function() {
-      var height = this.style.fontSize * this._lines.length;
-      if (this.style.baseline !== 'middle') height*=2;
-      return height*this.style.lineHeight;
+      var height = this.fontSize * this._lines.length;
+      if (this.baseline !== 'middle') height*=2;
+      return height*this.lineHeight;
     },
 
     _render: function() {
-      var style = this.style;
       var canvas = this.canvas;
       var context = canvas.context;
 
-      var fontSize = this.style.fontSize;
-      var font = "{fontWeight} {fontSize}px {fontFamily}".format(this.style);
-      var lines = this._lines = this.style.text.split('\n');
+      var fontSize = this.fontSize;
+      var font = "{fontWeight} {fontSize}px {fontFamily}".format(this);
+      var lines = this._lines = this.text.split('\n');
       canvas.context.font = font;
 
-      canvas.width = this.calcWidth() + style.padding*2;
-      canvas.height = this.calcHeight() + style.padding*2;
-      canvas.clearColor(style.backgroundColor);
+      canvas.width = this.calcWidth() + this.padding*2;
+      canvas.height = this.calcHeight() + this.padding*2;
+      canvas.clearColor(this.backgroundColor);
 
       canvas.transformCenter();
       context.font = font;
-      context.textAlign = this.style.align;
-      context.textBaseline = this.style.baseline;
+      context.textAlign = this.align;
+      context.textBaseline = this.baseline;
 
-      context.fillStyle = this.style.color;
-      context.strokeStyle = this.style.strokeColor;
-      context.lineWidth = this.style.strokeWidth;
+      context.fillStyle = this.fill;
+      context.strokeStyle = this.stroke;
+      context.lineWidth = this.strokeWidth;
 
       context.lineJoin = "round";
 
-      var lineSize = fontSize*style.lineHeight;
+      var lineSize = fontSize*this.lineHeight;
       var offset = -Math.floor(lines.length/2)*lineSize;
       offset += ((lines.length+1)%2) * (lineSize/2);
 
-      if (this.style.stroke) {
+      if (this.stroke) {
         context.shadowBlur = 0;
         lines.forEach(function(line, i) {
           context.strokeText(line, 0, i*lineSize+offset);
         }, this);
       }
 
-      context.shadowBlur = this.style.shadowBlur;
-      context.shadowColor = this.style.shadowColor;
+      if (this.shadow) {
+        context.shadowColor = this.shadow;
+        context.shadowBlur = this.shadowBlur;
+      }
       lines.forEach(function(line, i) {
         context.fillText(line, 0, i*lineSize+offset);
       }, this);
@@ -7198,12 +7748,32 @@ phina.namespace(function() {
 
     _accessor: {
       text: {
-        get: function() {
-          return this.style.text;
-        },
-        set: function(v) {
-          this.style.text = v;
-        },
+        get: function() { return this._text; },
+        set: function(v) { this._dirtyDraw = true; this._text = v; },
+      },
+      fontSize: {
+        get: function() { return this._fontSize; },
+        set: function(v) { this._dirtyDraw = true; this._fontSize = v; },
+      },
+      fontWeight: {
+        get: function() { return this._fontWeight; },
+        set: function(v) { this._dirtyDraw = true; this._fontWeight = v; },
+      },
+      fontFamily: {
+        get: function() { return this._fontFamily; },
+        set: function(v) { this._dirtyDraw = true; this._fontFamily = v; },
+      },
+      align: {
+        get: function() { return this._align; },
+        set: function(v) { this._dirtyDraw = true; this._align = v; },
+      },
+      baseline: {
+        get: function() { return this._baseline; },
+        set: function(v) { this._dirtyDraw = true; this._baseline = v; },
+      },
+      lineHeight: {
+        get: function() { return this._lineHeight; },
+        set: function(v) { this._dirtyDraw = true; this._lineHeight = v; },
       },
     }
   });
@@ -7470,6 +8040,7 @@ phina.namespace(function() {
       this.mouse = phina.input.Mouse(this.domElement);
       this.touch = phina.input.Touch(this.domElement);
       this.touchList = phina.input.TouchList(this.domElement, 5);
+      this.keyboard = phina.input.Keyboard(document);
 
       // ポインタをセット(PC では Mouse, Mobile では Touch)
       this.pointer = this.touch;
@@ -7482,6 +8053,23 @@ phina.namespace(function() {
       this.domElement.addEventListener("mousedown", function () {
         this.pointer = this.mouse;
         this.pointers = [this.mouse];
+      }.bind(this));
+
+      // keyboard event
+      this.keyboard.on('keydown', function(e) {
+        this.currentScene && this.currentScene.flare('keydown', {
+          keyCode: e.keyCode,
+        });
+      }.bind(this));
+      this.keyboard.on('keyup', function(e) {
+        this.currentScene && this.currentScene.flare('keyup', {
+          keyCode: e.keyCode,
+        });
+      }.bind(this));
+      this.keyboard.on('keypress', function(e) {
+        this.currentScene && this.currentScene.flare('keypress', {
+          keyCode: e.keyCode,
+        });
       }.bind(this));
 
       // click 対応
@@ -7497,6 +8085,7 @@ phina.namespace(function() {
       this.mouse.update();
       this.touch.update();
       this.touchList.update();
+      this.keyboard.update();
     },
 
     _checkClick: function(e) {
@@ -7617,7 +8206,7 @@ phina.namespace(function() {
      */
     init: function(params) {
       this.superInit({
-      	color: 'white',
+      	fill: 'white',
       	stroke: false,
       });
 
@@ -7657,9 +8246,9 @@ phina.namespace(function() {
       this.width = params.width;
       this.height = params.height;
 
-      this.setInteractive(true, 'rect');
+      this.setInteractive(true);
 
-      this.on('pointingend', function() {
+      this.on('pointend', function() {
         this.flare('push');
       });
     },
@@ -7670,7 +8259,7 @@ phina.namespace(function() {
 phina.namespace(function() {
 
   /**
-   * @class phina.geom.Button
+   * @class phina.ui.Button
    * Button
    */
   phina.define('phina.ui.Button', {
@@ -7683,29 +8272,44 @@ phina.namespace(function() {
 
       params = (params || {}).$safe({
         text: 'Hello',
-        color: 'white',
+        fontColor: 'white',
         backgroundColor: 'hsl(200, 80%, 60%)',
         cornerRadius: 8,
         fontSize: 32,
-      });
-
-      this.setInteractive(true, 'rect');
-      this.on('pointend', function() {
-        this.flare('push');
       });
 
       this.bg = phina.display.RectangleShape({
         width: this.width,
         height: this.height,
         cornerRadius: params.cornerRadius,
-        color: params.backgroundColor,
+        fill: params.backgroundColor,
         stroke: false,
       }).addChildTo(this);
-      this.label = phina.display.Label(params.text, {
-        color: params.color,
+      this.label = phina.display.Label({
+        text: params.text,
+        fill: params.fontColor,
         stroke: false,
         fontSize: params.fontSize,
       }).addChildTo(this);
+    },
+
+    _accessor: {
+      text: {
+        "get": function()   { return this.label.text; },
+        "set": function(v)  { this.label.text = v; },
+      },
+
+      fontSize: {
+        "set": function(v)  { this.label.fontSize = v; },
+      },
+
+      fontColor: {
+        "set": function (v) { this.label.color = v; },
+      },
+
+      backgroundColor: {
+        "set": function (v) { this.bg.color = v; },
+      },
     },
   });
 
@@ -7715,11 +8319,11 @@ phina.namespace(function() {
 phina.namespace(function() {
 
   /**
-   * @class phina.geom.Button
+   * @class phina.ui.FlatButton
    * Button
    */
   phina.define('phina.ui.FlatButton', {
-    superClass: 'phina.display.CanvasElement',
+    superClass: 'phina.ui.BaseButton',
     /**
      * @constructor
      */
@@ -7736,18 +8340,192 @@ phina.namespace(function() {
       this.height = params.height;
 
       this.bg = phina.display.RectangleShape().addChildTo(this);
-      this.bg.style.$extend({
+      this.bg.$extend({
         width: params.width,
         height: params.height,
       });
       this.label = phina.display.Label('hoge').addChildTo(this);
-      
-      this.setInteractive(true, 'rect');
+    },
+    _accessor: {
+      text: {
+        "get": function()   { return this.label.text; },
+        "set": function(v)  { this.label.text = v; },
+      },
+
+      fontSize: {
+        "set": function(v)  { this.label.fontSize = v; },
+      },
+
+      fontColor: {
+        "set": function (v) { this.label.color = v; },
+      },
+
+      backgroundColor: {
+        "set": function (v) { this.bg.color = v; },
+      },
     },
   });
 
 });
 
+phina.namespace(function() {
+
+  /**
+   * @class phina.ui.Gauge
+   * 
+   */
+  phina.define('phina.ui.Gauge', {
+    superClass: 'phina.display.Shape',
+
+    init: function(options) {
+      options = (options || {}).$safe({
+        width: 256,
+        height: 32,
+        backgroundColor: 'transparent',
+        fill: 'white',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        value: 100,
+        maxValue: 100,
+        gaugeColor: '#44f',
+        cornerRadius: 4,
+      });
+
+      this.superInit(options);
+
+      this._value = options.value;
+      this.maxValue = options.maxValue;
+      this.gaugeColor = options.gaugeColor;
+      this.cornerRadius = options.cornerRadius;
+
+      this.visualValue = options.value;
+      this.animation = true;
+      this.animationTime = 1*1000;
+    },
+
+    /**
+     * 満タンかをチェック
+     */
+    isFull: function() {
+      return this.value === this.maxValue;
+    },
+
+    /**
+     * 空っぽかをチェック
+     */
+    isEmpty: function() {
+      return this.value == 0;
+    },
+
+    setValue: function(value) {
+      value = Math.clamp(value, 0, this._maxValue);
+
+      // end when now value equal value of argument
+      if (this.value === value) return ;
+
+      // fire value change event
+      this.flare('change');
+
+      if (this.animation) {
+        var range = Math.abs(this.visualValue-value);
+        var time = (range/this.maxValue)*this.animationTime;
+
+        this.tweener.ontween = function() {
+          this._dirtyDraw = true;
+        }.bind(this);
+        this.tweener
+          .clear()
+          .to({'visualValue': value}, time)
+          .call(function() {
+            this.flare('changed');
+            if (this.isEmpty()) {
+              this.flare('empty');
+            }
+            else if (this.isFull()) {
+              this.flare('full');
+            }
+          }, this);
+      }
+      else {
+        this.visualValue = value;
+        this.flare('changed');
+        if (this.isEmpty()) {
+          this.flare('empty');
+        }
+        else if (this.isFull()) {
+          this.flare('full');
+        }
+      }
+
+      this._value = value;
+    },
+
+    _render: function() {
+      this.canvas.width = this.width + this.padding*2;
+      this.canvas.height= this.height + this.padding*2;
+      // 
+      this.canvas.clearColor(this.backgroundColor);
+
+
+      this.canvas.transformCenter();
+
+      var rate = this.visualValue/this.maxValue;
+
+      // draw color
+      if (this.fill) {
+        this.canvas.context.fillStyle = this.fill;
+        this.canvas.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+      }
+      // draw gauge
+      this.canvas.context.fillStyle = this.gaugeColor;
+      this.canvas.fillRect(-this.width/2, -this.height/2, this.width*rate, this.height);
+      // draw stroke
+      if (this.stroke) {
+        this.canvas.context.lineWidth = this.strokeWidth;
+        this.canvas.strokeStyle = this.stroke;
+        this.canvas.strokeRect(-this.width/2, -this.height/2, this.width, this.height);
+      }
+    },
+
+    _accessor: {
+      value: {
+        get: function() {
+          return this._value;
+        },
+        set: function(v) {
+          this._dirtyDraw = true;
+          this.setValue(v);
+        },
+      },
+      maxValue: {
+        get: function() {
+          return this._maxValue;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._maxValue = v;
+        },
+      },
+      gaugeColor: {
+        get: function() {
+          return this._gaugeColor;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._gaugeColor = v;
+        },
+      },
+      cornerRadius: {
+        get: function() {
+          return this._cornerRadius;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._cornerRadius = v;
+        },
+      },
+    }
+  });
+
+});
 
 
 phina.namespace(function() {
@@ -7973,11 +8751,12 @@ phina.namespace(function() {
         children: {
           titleLabel: {
             className: 'phina.display.Label',
-            arguments: [params.title, {
-              color: params.fontColor,
+            arguments: {
+              text: params.title,
+              fill: params.fontColor,
               stroke: false,
               fontSize: 64,
-            }],
+            },
             x: this.gridX.center(),
             y: this.gridY.span(4),
           }
@@ -7989,12 +8768,12 @@ phina.namespace(function() {
           children: {
             touchLabel: {
               className: 'phina.display.Label',
-              arguments: ["TOUCH START", {
-                color: 'white',
-                color: params.fontColor,
+              arguments: {
+                text: "TOUCH START",
+                fill: params.fontColor,
                 stroke: false,
                 fontSize: 32,
-              }],
+              },
               x: this.gridX.center(),
               y: this.gridY.span(12),
             },
@@ -8053,32 +8832,35 @@ phina.namespace(function() {
         children: {
           scoreText: {
             className: 'phina.display.Label',
-            arguments: ['score', {
-              color: params.fontColor,
+            arguments: {
+              text: 'score',
+              fill: params.fontColor,
               stroke: false,
               fontSize: 48,
-            }],
+            },
             x: this.gridX.span(8),
             y: this.gridY.span(4),
           },
           scoreLabel: {
             className: 'phina.display.Label',
-            arguments: [params.score+'', {
-              color: params.fontColor,
+            arguments: {
+              text: params.score+'',
+              fill: params.fontColor,
               stroke: false,
               fontSize: 80,
-            }],
+            },
             x: this.gridX.span(8),
             y: this.gridY.span(6),
           },
 
           messageLabel: {
             className: 'phina.display.Label',
-            arguments: [params.message, {
-              color: params.fontColor,
+            arguments: {
+              text: params.message,
+              fill: params.fontColor,
               stroke: false,
               fontSize: 32,
-            }],
+            },
             x: this.gridX.span(8),
             y: this.gridY.span(8),
           },
@@ -8260,11 +9042,11 @@ phina.namespace(function() {
         children: {
           label: {
             className: 'phina.display.Label',
-            arguments: ['', {
-              color: 'white',
+            arguments: {
+              fill: 'white',
               fontSize: options.fontSize,
               stroke: false,
-            }],
+            },
             x: this.gridX.center(),
             y: this.gridY.center(),
           },
@@ -8489,147 +9271,6 @@ phina.namespace(function() {
           this._render();
         },
       }
-    }
-  });
-
-});
-
-phina.namespace(function() {
-
-  /**
-   * @class phina.game.Gauge
-   * 
-   */
-  phina.define('phina.game.Gauge', {
-    superClass: 'phina.display.Shape',
-
-    init: function(style) {
-      style = (style || {}).$safe({
-        value: 100,
-        maxValue: 100,
-        gaugeColor: '#44f',
-
-        width: 256,
-        height: 32,
-
-        color: 'white',
-        radius: 64,
-
-        stroke: true,
-        strokeWidth: 4,
-        strokeColor: '#aaa',
-
-        cornerRadius: 4,
-
-        backgroundColor: 'transparent',
-      });
-
-      this.superInit(style);
-
-      this.visualValue = style.value;
-      this.animation = true;
-      this.animationTime = 1*1000;
-    },
-
-    /**
-     * 満タンかをチェック
-     */
-    isFull: function() {
-      return this.value === this.maxValue;
-    },
-
-    /**
-     * 空っぽかをチェック
-     */
-    isEmpty: function() {
-      return this.value == 0;
-    },
-
-    setValue: function(value) {
-      value = Math.clamp(value, 0, this._maxValue);
-
-      // end when now value equal value of argument
-      if (this.value === value) return ;
-
-      // fire value change event
-      this.flare('change');
-
-      if (this.animation) {
-        var range = Math.abs(this.visualValue-value);
-        var time = (range/this.maxValue)*this.animationTime;
-
-        this.tweener.ontween = function() {
-          this._dirtyDraw = true;
-        }.bind(this);
-        this.tweener
-          .clear()
-          .to({'visualValue': value}, time)
-          .call(function() {
-            this.flare('changed');
-            if (this.isEmpty()) {
-              this.flare('empty');
-            }
-            else if (this.isFull()) {
-              this.flare('full');
-            }
-          }, this);
-      }
-      else {
-        this.visualValue = value;
-        this.flare('changed');
-        if (this.isEmpty()) {
-          this.flare('empty');
-        }
-        else if (this.isFull()) {
-          this.flare('full');
-        }
-      }
-
-      this.style.value = value;
-    },
-
-    _render: function() {
-      var style = this.style;
-      this.canvas.width = style.width + style.padding*2;
-      this.canvas.height= style.height + style.padding*2;
-      // 
-      this.canvas.clearColor(style.backgroundColor);
-
-      this.canvas.transformCenter();
-
-      var rate = this.visualValue/this.maxValue;
-
-      // draw color
-      this.canvas.context.fillStyle = style.color;
-      this.canvas.fillRect(-style.width/2, -style.height/2, style.width, style.height);
-      // draw gauge
-      this.canvas.context.fillStyle = style.gaugeColor;
-      this.canvas.fillRect(-style.width/2, -style.height/2, style.width*rate, style.height);
-      // draw stroke
-      if (style.stroke) {
-        this.canvas.context.lineWidth = style.strokeWidth;
-        this.canvas.strokeStyle = style.strokeColor;
-        this.canvas.strokeRect(-style.width/2, -style.height/2, style.width, style.height);
-      }
-    },
-
-    _accessor: {
-      value: {
-        get: function() {
-          return this.style.value;
-        },
-        set: function(v) {
-          this.setValue(v);
-        },
-      },
-      maxValue: {
-        get: function() {
-          return this.style.maxValue;
-        },
-        set: function(v) {
-          this.style.maxValue = v;
-        },
-      },
     }
   });
 
