@@ -28,6 +28,26 @@ th.describe("display.Shape", function() {
     }).addChildTo(this);
     shape.position.set(this.gridX.center(), this.gridY.span(6));
   });
+
+  th.it('TriangleShape', function() {
+    var shape = phina.display.TriangleShape().addChildTo(this);
+    shape.position.set(this.gridX.center(), this.gridY.span(4));
+  });
+
+  th.it('StarShape', function() {
+    var shape = phina.display.StarShape().addChildTo(this);
+    shape.position.set(this.gridX.center(), this.gridY.span(4));
+  });
+
+  th.it('PolygonShape', function() {
+    var shape = phina.display.PolygonShape().addChildTo(this);
+    shape.position.set(this.gridX.center(), this.gridY.span(4));
+  });
+
+  th.it('HeartShape', function() {
+    var shape = phina.display.HeartShape().addChildTo(this);
+    shape.position.set(this.gridX.center(), this.gridY.span(4));
+  });
 });
 
 

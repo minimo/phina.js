@@ -3,7 +3,7 @@ phina.namespace(function() {
 
   /**
    * @class phina.display.Shape
-   * 
+   *
    */
   phina.define('phina.display.Shape', {
     superClass: 'phina.display.CanvasElement',
@@ -30,7 +30,7 @@ phina.namespace(function() {
       this.fill = options.fill;
       this.stroke = options.stroke;
       this.strokeWidth = options.strokeWidth;
-      
+
       this.shadow = options.shadow;
       this.shadowBlur = options.shadowBlur;
 
@@ -46,10 +46,21 @@ phina.namespace(function() {
     },
 
     _render: function() {
-      this.canvas.width = this.width + this.padding*2;
-      this.canvas.height= this.height + this.padding*2;
+      this._renderBackground();
 
-      this.canvas.clearColor(this.backgroundColor);
+      return this;
+    },
+
+    _renderBackground: function(width, height, color) {
+      width = width || (this.width + this.padding*2);
+      height = height || (this.height + this.padding*2);
+      color = color || this.backgroundColor;
+
+      this.canvas.width = width;
+      this.canvas.height= height;
+      this.canvas.clearColor(color);
+
+      return this;
     },
 
     draw: function(canvas) {
@@ -144,9 +155,12 @@ phina.namespace(function() {
     },
   });
 
+});
+
+phina.namespace(function() {
   /**
    * @class phina.display.RectangleShape
-   * 
+   *
    */
   phina.define('phina.display.RectangleShape', {
     superClass: 'phina.display.Shape',
@@ -166,20 +180,20 @@ phina.namespace(function() {
     },
 
     _render: function() {
-      this.canvas.width = this.width + this.padding*2;
-      this.canvas.height= this.height + this.padding*2;
-      this.canvas.clearColor(this.backgroundColor);
+      this._renderBackground();
 
       this.canvas.transformCenter();
+
+      if (this.fill) {
+        this.canvas.context.fillStyle = this.fill;
+        this.canvas.fillRoundRect(-this.width/2, -this.height/2, this.width, this.height, this.cornerRadius);
+      }
 
       if (this.stroke) {
         this.canvas.context.lineWidth = this.strokeWidth;
         this.canvas.strokeStyle = this.stroke;
         this.canvas.strokeRoundRect(-this.width/2, -this.height/2, this.width, this.height, this.cornerRadius);
       }
-
-      this.canvas.context.fillStyle = this.fill;
-      this.canvas.fillRoundRect(-this.width/2, -this.height/2, this.width, this.height, this.cornerRadius);
     },
 
     _accessor: {
@@ -192,12 +206,14 @@ phina.namespace(function() {
         },
       }
     },
-
   });
+});
+
+phina.namespace(function() {
 
   /**
-   * @class phina.display.Shape
-   * 
+   * @class phina.display.CircleShape
+   *
    */
   phina.define('phina.display.CircleShape', {
     superClass: 'phina.display.Shape',
@@ -216,20 +232,21 @@ phina.namespace(function() {
     },
 
     _render: function() {
-      this.canvas.width = this.radius*2 + this.padding*2;
-      this.canvas.height= this.radius*2 + this.padding*2;
-      this.canvas.clearColor(this.backgroundColor);
+      var size = this.radius*2 + this.padding*2;
+      this._renderBackground(size, size);
 
       this.canvas.transformCenter();
+
+      if (this.fill) {
+        this.canvas.context.fillStyle = this.fill;
+        this.canvas.fillCircle(0, 0, this.radius);
+      }
 
       if (this.stroke) {
         this.canvas.context.lineWidth = this.strokeWidth;
         this.canvas.strokeStyle = this.stroke;
         this.canvas.strokeCircle(0, 0, this.radius);
       }
-
-      this.canvas.context.fillStyle = this.fill;
-      this.canvas.fillCircle(0, 0, this.radius);
     },
 
     _accessor: {
@@ -241,6 +258,238 @@ phina.namespace(function() {
           this._dirtyDraw = true; this._radius = v;
         },
       }
+    },
+  });
+});
+
+phina.namespace(function() {
+  /**
+   * @class phina.display.TriangleShape
+   *
+   */
+  phina.define('phina.display.TriangleShape', {
+    superClass: 'phina.display.Shape',
+    init: function(options) {
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
+        fill: 'green',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        radius: 32,
+      });
+      this.superInit(options);
+
+      this.radius = options.radius;
+    },
+
+    _render: function() {
+      var size = this.radius*2 + this.padding*2;
+      this._renderBackground(size, size);
+
+      var canvas = this.canvas;
+
+      canvas.transformCenter();
+
+      if (this.fill) {
+        canvas.context.fillStyle = this.fill;
+        canvas.fillPolygon(0, 0, this.radius, 3);
+      }
+
+      if (this.stroke) {
+        canvas.context.lineWidth = this.strokeWidth;
+        canvas.strokeStyle = this.stroke;
+        canvas.strokePolygon(0, 0, this.radius, 3);
+      }
+    },
+
+    _accessor: {
+      radius: {
+        get: function() {
+          return this._radius;
+        },
+        set: function(v) {
+          this._dirtyDraw = true; this._radius = v;
+        },
+      }
+    },
+  });
+
+});
+
+phina.namespace(function() {
+  /**
+   * @class phina.display.StarShape
+   *
+   */
+  phina.define('phina.display.StarShape', {
+    superClass: 'phina.display.Shape',
+    init: function(options) {
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
+        fill: 'yellow',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        radius: 32,
+        sides: 5,
+        sideIndent: 0.38,
+      });
+      this.superInit(options);
+
+      this.radius = options.radius;
+      this.sides = options.sides;
+      this.sideIndent = options.sideIndent;
+    },
+
+    _render: function() {
+      var size = this.radius*2 + this.padding*2;
+      this._renderBackground(size, size);
+
+      var canvas = this.canvas;
+
+      canvas.transformCenter();
+
+      if (this.fill) {
+        canvas.context.fillStyle = this.fill;
+        canvas.fillStar(0, 0, this.radius, this.sides, this.sideIndent);
+      }
+
+      if (this.stroke) {
+        canvas.context.lineWidth = this.strokeWidth;
+        canvas.strokeStyle = this.stroke;
+        canvas.strokeStar(0, 0, this.radius, this.sides, this.sideIndent);
+      }
+    },
+
+    _accessor: {
+      radius: {
+        get: function() { return this._radius; },
+        set: function(v) { this._dirtyDraw = true; this._radius = v; },
+      },
+      sides: {
+        get: function() { return this._sides; },
+        set: function(v) { this._dirtyDraw = true; this._sides = v; },
+      },
+      sideIndent: {
+        get: function() { return this._sideIndent; },
+        set: function(v) { this._dirtyDraw = true; this._sideIndent = v; },
+      },
+    },
+  });
+
+});
+
+phina.namespace(function() {
+  /**
+   * @class phina.display.PolygonShape
+   *
+   */
+  phina.define('phina.display.PolygonShape', {
+    superClass: 'phina.display.Shape',
+    init: function(options) {
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
+        fill: 'cyan',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        radius: 32,
+        sides: 5,
+      });
+      this.superInit(options);
+
+      this.radius = options.radius;
+      this.sides = options.sides;
+    },
+
+    _render: function() {
+      var size = this.radius*2 + this.padding*2;
+      this._renderBackground(size, size);
+
+      var canvas = this.canvas;
+
+      canvas.transformCenter();
+
+      if (this.fill) {
+        canvas.context.fillStyle = this.fill;
+        canvas.fillPolygon(0, 0, this.radius, this.sides);
+      }
+
+      if (this.stroke) {
+        canvas.context.lineWidth = this.strokeWidth;
+        canvas.strokeStyle = this.stroke;
+        canvas.strokePolygon(0, 0, this.radius, this.sides);
+      }
+    },
+
+    _accessor: {
+      radius: {
+        get: function() { return this._radius; },
+        set: function(v) { this._dirtyDraw = true; this._radius = v; },
+      },
+      sides: {
+        get: function() { return this._sides; },
+        set: function(v) { this._dirtyDraw = true; this._sides = v; },
+      },
+    },
+  });
+
+});
+
+
+phina.namespace(function() {
+  /**
+   * @class phina.display.HeartShape
+   *
+   */
+  phina.define('phina.display.HeartShape', {
+    superClass: 'phina.display.Shape',
+    init: function(options) {
+      options = (options || {}).$safe({
+        backgroundColor: 'transparent',
+        fill: 'pink',
+        stroke: '#aaa',
+        strokeWidth: 4,
+
+        radius: 32,
+        cornerAngle: 45,
+      });
+      this.superInit(options);
+
+      this.radius = options.radius;
+      this.cornerAngle = options.cornerAngle;
+    },
+
+    _render: function() {
+      var size = this.radius*2 + this.padding*2;
+      this._renderBackground(size, size);
+
+      var canvas = this.canvas;
+
+      canvas.transformCenter();
+
+      if (this.fill) {
+        canvas.context.fillStyle = this.fill;
+        canvas.fillHeart(0, 0, this.radius, this.cornerAngle);
+      }
+
+      if (this.stroke) {
+        canvas.context.lineWidth = this.strokeWidth;
+        canvas.strokeStyle = this.stroke;
+        canvas.strokeHeart(0, 0, this.radius, this.cornerAngle);
+      }
+    },
+
+    _accessor: {
+      radius: {
+        get: function() { return this._radius; },
+        set: function(v) { this._dirtyDraw = true; this._radius = v; },
+      },
+      cornerAngle: {
+        get: function() { return this._cornerAngle; },
+        set: function(v) { this._dirtyDraw = true; this._cornerAngle = v; },
+      },
     },
   });
 

@@ -3,6 +3,10 @@
 
 phina.namespace(function() {
 
+  /**
+   * @class phina.accessory.Tweener
+   * Tweener
+   */
   phina.define('phina.accessory.Tweener', {
     superClass: 'phina.accessory.Accessory',
 
@@ -214,6 +218,7 @@ phina.namespace(function() {
       if (!task) {
         if (this._loop) {
           this.rewind();
+          this._update(app);
         }
         else {
           this.playing = false;
@@ -262,18 +267,16 @@ phina.namespace(function() {
 
     _updateTween: function(app) {
       var tween = this._tween;
-      var time = app.ticker.deltaTime;
-      // var time = 1000/app.fps;
+      // var time = app.ticker.deltaTime;
+      var time = 1000/app.fps;
+
+      tween.forward(time);
+      this.flare('tween');
 
       if (tween.time >= tween.duration) {
         delete this._tween;
         this._tween = null;
         this._update = this._updateTask;
-      }
-      else {
-        tween.forward(time);
-
-        this.flare('tween');
       }
     },
 

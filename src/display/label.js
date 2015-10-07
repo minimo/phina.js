@@ -8,6 +8,9 @@ phina.namespace(function() {
   phina.define('phina.display.Label', {
     superClass: 'phina.display.Shape',
 
+    /**
+     * @constructor
+     */
     init: function(options) {
       if (typeof arguments[0] === 'string') {
         options = { text: arguments[0], };
@@ -74,26 +77,23 @@ phina.namespace(function() {
       var lines = this._lines = this.text.split('\n');
       canvas.context.font = font;
 
-      canvas.width = this.calcWidth() + this.padding*2;
-      canvas.height = this.calcHeight() + this.padding*2;
-      canvas.clearColor(this.backgroundColor);
+      var w = this.calcWidth() + this.padding*2;
+      var h = this.calcHeight() + this.padding*2;
+      this._renderBackground(w, h);
 
       canvas.transformCenter();
       context.font = font;
       context.textAlign = this.align;
       context.textBaseline = this.baseline;
 
-      context.fillStyle = this.fill;
-      context.strokeStyle = this.stroke;
-      context.lineWidth = this.strokeWidth;
-
-      context.lineJoin = "round";
-
       var lineSize = fontSize*this.lineHeight;
       var offset = -Math.floor(lines.length/2)*lineSize;
       offset += ((lines.length+1)%2) * (lineSize/2);
 
       if (this.stroke) {
+        context.strokeStyle = this.stroke;
+        context.lineWidth = this.strokeWidth;
+        context.lineJoin = "round";
         context.shadowBlur = 0;
         lines.forEach(function(line, i) {
           context.strokeText(line, 0, i*lineSize+offset);
@@ -104,36 +104,61 @@ phina.namespace(function() {
         context.shadowColor = this.shadow;
         context.shadowBlur = this.shadowBlur;
       }
-      lines.forEach(function(line, i) {
-        context.fillText(line, 0, i*lineSize+offset);
-      }, this);
+
+      if (this.fill) {
+        context.fillStyle = this.fill;
+        lines.forEach(function(line, i) {
+          context.fillText(line, 0, i*lineSize+offset);
+        }, this);
+      }
     },
 
     _accessor: {
+      /**
+       * text
+       */
       text: {
         get: function() { return this._text; },
         set: function(v) { this._dirtyDraw = true; this._text = v; },
       },
+      /**
+       * font size
+       */
       fontSize: {
         get: function() { return this._fontSize; },
         set: function(v) { this._dirtyDraw = true; this._fontSize = v; },
       },
+      /**
+       * font weight
+       */
       fontWeight: {
         get: function() { return this._fontWeight; },
         set: function(v) { this._dirtyDraw = true; this._fontWeight = v; },
       },
+      /**
+       * font family
+       */
       fontFamily: {
         get: function() { return this._fontFamily; },
         set: function(v) { this._dirtyDraw = true; this._fontFamily = v; },
       },
+      /**
+       * align
+       */
       align: {
         get: function() { return this._align; },
         set: function(v) { this._dirtyDraw = true; this._align = v; },
       },
+      /**
+       * baseline
+       */
       baseline: {
         get: function() { return this._baseline; },
         set: function(v) { this._dirtyDraw = true; this._baseline = v; },
       },
+      /**
+       * line height
+       */
       lineHeight: {
         get: function() { return this._lineHeight; },
         set: function(v) { this._dirtyDraw = true; this._lineHeight = v; },

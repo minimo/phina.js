@@ -7,7 +7,7 @@ phina.namespace(function() {
 
   /**
    * @class phina.game.ResultScene
-   * 
+   *
    */
   phina.define('phina.game.ResultScene', {
     superClass: 'phina.display.CanvasScene',
@@ -19,6 +19,8 @@ phina.namespace(function() {
 
       params = (params || {}).$safe(phina.game.ResultScene.defaults);
 
+      var message = params.message.format(params);
+
       this.backgroundColor = params.backgroundColor;
 
       this.fromJSON({
@@ -28,7 +30,7 @@ phina.namespace(function() {
             arguments: {
               text: 'score',
               fill: params.fontColor,
-              stroke: false,
+              stroke: null,
               fontSize: 48,
             },
             x: this.gridX.span(8),
@@ -39,7 +41,7 @@ phina.namespace(function() {
             arguments: {
               text: params.score+'',
               fill: params.fontColor,
-              stroke: false,
+              stroke: null,
               fontSize: 80,
             },
             x: this.gridX.span(8),
@@ -49,9 +51,9 @@ phina.namespace(function() {
           messageLabel: {
             className: 'phina.display.Label',
             arguments: {
-              text: params.message,
+              text: message,
               fill: params.fontColor,
-              stroke: false,
+              stroke: null,
               fontSize: 32,
             },
             x: this.gridX.span(8),
@@ -98,7 +100,7 @@ phina.namespace(function() {
 
       this.shareButton.onclick = function() {
         var url = phina.social.Twitter.createURL({
-          text: params.message,
+          text: message,
           hashtags: params.hashtags,
         });
         window.open(url, 'share window', 'width=480, height=320');
@@ -109,8 +111,8 @@ phina.namespace(function() {
       defaults: {
         score: 16,
 
-        message: 'this is phina.js project.\n',
-        hashtags: 'phina,game,javascript',
+        message: 'this is phina.js project.\nscore: {score}\n',
+        hashtags: 'phina_js,game,javascript',
         url: phina.global.location && phina.global.location.href,
 
         width: 640,

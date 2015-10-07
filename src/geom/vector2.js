@@ -127,7 +127,7 @@ phina.namespace(function() {
      * ランダムベクトルをセット
      */
     random: function(min, max) {
-      var degree = Math.randf(min || 0, max || 360);
+      var degree = phina.util.Random.randfloat(min || 0, max || 360);
       var rad = degree*Math.DEG_TO_RAD;
 
       this.x = Math.cos(rad);
@@ -144,10 +144,12 @@ phina.namespace(function() {
     },
 
     _accessor: {
-      // x: {
-      //   "get": function()   { return this._x; },
-      //   "set": function(v)  { this._x = v; }
-      // },
+    },
+
+    _static: {
+      distanceSquared: function(lhs, rhs) {
+        return Math.pow(lhs.x-rhs.x, 2) + Math.pow(lhs.y-rhs.y, 2);
+      },
     },
 
     _defined: function() {
