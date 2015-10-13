@@ -42,6 +42,24 @@ th.describe("input.Touches", function() {
       this.bg.style.color = 'hsl(200, 80%, 60%)';
     };
   });
+});
+
+th.describe("input.Mouse", function() {
+
+  th.it('getPointing', function() {
+    var label = phina.display.Label().addChildTo(this);
+    label.setPosition(320, 480);
+
+    this.update = function(app) {
+      var mouse = app.mouse;
+      if (mouse.getPointing()) {
+        label.text = 'getPointing: true';
+      }
+      else {
+        label.text = 'getPointing: false';
+      }
+    }
+  });
 
 });
 

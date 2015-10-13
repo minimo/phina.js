@@ -4324,7 +4324,7 @@ phina.namespace(function() {
      * タッチしているかを判定
      */
     getTouch: function() {
-      return this.touched != 0;
+      return this.now != 0;
     },
     
     /**
@@ -7734,6 +7734,10 @@ phina.namespace(function() {
 
     /** 表示フラグ */
     visible: true,
+    /** アルファ */
+    alpha: 1.0,
+    /** ブレンドモード */
+    blendMode: "source-over",
 
     /** 子供を 自分のCanvasRenderer で描画するか */
     renderChildBySelf: false,
@@ -7863,9 +7867,15 @@ phina.namespace(function() {
       var image = this.canvas.domElement;
       var w = image.width;
       var h = image.height;
+      
+      // var x = -this.width*this.originX - this.padding;
+      // var y = -this.height*this.originY - this.padding;
+      var x = -w*this.origin.x;
+      var y = -h*this.origin.y;
+
       canvas.context.drawImage(image,
         0, 0, w, h,
-        -w*this.origin.x, -h*this.origin.y, w, h
+        x, y, w, h
         );
     },
 
@@ -8290,7 +8300,6 @@ phina.namespace(function() {
   });
 
 });
-
 
 
 phina.namespace(function() {
@@ -8729,6 +8738,7 @@ phina.namespace(function() {
       var context = this.canvas.context;
 
       context.globalAlpha = obj._worldAlpha;
+      context.globalCompositeOperation = obj.blendMode;
 
       if (obj._worldMatrix) {
         // 行列をセット
