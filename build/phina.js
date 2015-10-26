@@ -7867,7 +7867,7 @@ phina.namespace(function() {
       var image = this.canvas.domElement;
       var w = image.width;
       var h = image.height;
-      
+
       // var x = -this.width*this.originX - this.padding;
       // var y = -this.height*this.originY - this.padding;
       var x = -w*this.origin.x;
@@ -8061,7 +8061,10 @@ phina.namespace(function() {
           return this._radius;
         },
         set: function(v) {
-          this._dirtyDraw = true; this._radius = v;
+          this._dirtyDraw = true;
+          this._radius = v;
+          this._width = this._radius*2;
+          this._height = this._radius*2;
         },
       }
     },
@@ -8441,7 +8444,7 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(options) {
-      if (typeof arguments[0] === 'string') {
+      if (typeof arguments[0] !== 'object') {
         options = { text: arguments[0], };
         if (arguments[1] === 'object') {
             options.$safe(arguments[1]);
@@ -8506,7 +8509,8 @@ phina.namespace(function() {
 
       var fontSize = this.fontSize;
       var font = "{fontWeight} {fontSize}px {fontFamily}".format(this);
-      var lines = this._lines = this.text.split('\n');
+      var text = this.text + '';
+      var lines = this._lines = text.split('\n');
       canvas.context.font = font;
 
       var w = this.calcWidth() + this.padding*2;
