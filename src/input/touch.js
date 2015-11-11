@@ -81,80 +81,101 @@
 
   phina.define('phina.input.TouchList', {
     domElement: null,
+    touchMap: null,
+    touches: null,
+    _id: null,
 
-    init: function(domElement, length) {
+    init: function(domElement) {
       this.domElement = domElement;
 
       this.touches = [];
-      this.stockes = [];
+      var touchMap = this.touchMap = {};
 
-      (length).times(function() {
-        var touch = phina.input.Touch(domElement, true);
-        touch.id = null;
-        this.stockes.push(touch);
-      }, this);
+      // 32bit 周期でIDをループさせる
+      this._id = new Uint32Array(1);
 
       var self = this;
+      var each = Array.prototype.forEach;
       this.domElement.addEventListener('touchstart', function(e) {
-        Array.prototype.forEach.call(e.changedTouches, function(t) {
+        each.call(e.changedTouches, function(t) {
           var touch = self.getEmpty();
-
-          touch.id = t.identifier;
+          touchMap[t.identifier] = touch;
           touch._start(t.pointX, t.pointY);
         });
       });
 
       this.domElement.addEventListener('touchend', function(e) {
-        Array.prototype.forEach.call(e.changedTouches, function(t) {
-          var touch = self.getTouch(t.identifier);
+        each.call(e.changedTouches, function(t) {
+          var id = t.identifier;
+          var touch = touchMap[id];
           touch._end();
+          delete touchMap[id];
         });
       });
       this.domElement.addEventListener('touchmove', function(e) {
-        Array.prototype.forEach.call(e.changedTouches, function(t) {
-          var touch = self.getTouch(t.identifier);
+        each.call(e.changedTouches, function(t) {
+          var touch = touchMap[t.identifier];
           touch._move(t.pointX, t.pointY);
+        });
+        e.stop();
+      });
+
+      // iPhone では 6本指以上タッチすると強制的にすべてのタッチが解除される
+      this.domElement.addEventListener('touchcancel', function(e) {
+        console.warn('この端末での同時タッチ数の制限を超えました。');
+        each.call(e.changedTouches, function(t) {
+          var id = t.identifier;
+          var touch = touchMap[id];
+          touch._end();
+          delete touchMap[id];
         });
         e.stop();
       });
     },
 
     getEmpty: function() {
-      var touch = this.stockes.pop();
+      var touch = phina.input.Touch(this.domElement, true);
+    
+      touch.id = this.id;
       this.touches.push(touch);
 
       return touch;
     },
 
     getTouch: function(id) {
-      return this.touches.filter(function(touch) {
-        return touch.id === id;
-      })[0];
+      return this.touchMap[id];
     },
+
 
     removeTouch: function(touch) {
       var i = this.touches.indexOf(touch);
       this.touches.splice(i, 1);
-      this.stockes.push(touch);
     },
 
     update: function() {
       this.touches.forEach(function(touch) {
-        if (touch.id !== null) {
-          if (!touch.released) {
-            touch.update();
+        if (!touch.released) {
+          touch.update();
 
-            if (touch.flags === 0) {
-              touch.released = true;
-            }
-          }
-          else {
-            touch.released = false;
-            this.removeTouch(touch);
+          if (touch.flags === 0) {
+            touch.released = true;
           }
         }
+        else {
+          touch.released = false;
+          this.removeTouch(touch);
+        }
+
       }, this);
-    }
-  })
+    },
+
+    _accessor: {
+      id: {
+        get: function() {
+          return this._id[0]++;
+        }
+      },
+    },
+  });
 
 })();

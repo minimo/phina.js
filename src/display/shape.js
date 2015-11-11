@@ -82,7 +82,8 @@ phina.namespace(function() {
     _accessor: {
       width: {
         get: function() {
-          return this._width;
+          return (this.boundingType === 'rect') ?
+            this._width : this._diameter;
         },
         set: function(v) {
           this._dirtyDraw = true; this._width = v;
@@ -90,10 +91,22 @@ phina.namespace(function() {
       },
       height: {
         get: function() {
-          return this._height;
+          return (this.boundingType === 'rect') ?
+            this._height : this._diameter;
         },
         set: function(v) {
           this._dirtyDraw = true; this._height = v;
+        },
+      },
+      radius: {
+        "get": function()   {
+          return (this.boundingType === 'rect') ?
+            (this.width+this.height)/4 : this._radius;
+        },
+        "set": function(v)  {
+          this._dirtyDraw = true;
+          this._radius = v;
+          this._diameter = v*2;
         },
       },
       padding: {
@@ -229,12 +242,11 @@ phina.namespace(function() {
         fill: 'red',
         stroke: '#aaa',
         strokeWidth: 4,
-
         radius: 32,
       });
       this.superInit(options);
 
-      this.radius = options.radius;
+      this.setBoundingType('circle');
     },
 
     _render: function() {
@@ -252,20 +264,6 @@ phina.namespace(function() {
         this.canvas.context.lineWidth = this.strokeWidth;
         this.canvas.strokeStyle = this.stroke;
         this.canvas.strokeCircle(0, 0, this.radius);
-      }
-    },
-
-    _accessor: {
-      radius: {
-        get: function() {
-          return this._radius;
-        },
-        set: function(v) {
-          this._dirtyDraw = true;
-          this._radius = v;
-          this._width = this._radius*2;
-          this._height = this._radius*2;
-        },
       }
     },
   });
@@ -289,7 +287,7 @@ phina.namespace(function() {
       });
       this.superInit(options);
 
-      this.radius = options.radius;
+      this.setBoundingType('circle');
     },
 
     _render: function() {
@@ -309,17 +307,6 @@ phina.namespace(function() {
         canvas.context.lineWidth = this.strokeWidth;
         canvas.strokeStyle = this.stroke;
         canvas.strokePolygon(0, 0, this.radius, 3);
-      }
-    },
-
-    _accessor: {
-      radius: {
-        get: function() {
-          return this._radius;
-        },
-        set: function(v) {
-          this._dirtyDraw = true; this._radius = v;
-        },
       }
     },
   });
@@ -346,7 +333,7 @@ phina.namespace(function() {
       });
       this.superInit(options);
 
-      this.radius = options.radius;
+      this.setBoundingType('circle');
       this.sides = options.sides;
       this.sideIndent = options.sideIndent;
     },
@@ -372,10 +359,6 @@ phina.namespace(function() {
     },
 
     _accessor: {
-      radius: {
-        get: function() { return this._radius; },
-        set: function(v) { this._dirtyDraw = true; this._radius = v; },
-      },
       sides: {
         get: function() { return this._sides; },
         set: function(v) { this._dirtyDraw = true; this._sides = v; },
@@ -408,7 +391,7 @@ phina.namespace(function() {
       });
       this.superInit(options);
 
-      this.radius = options.radius;
+      this.setBoundingType('circle');
       this.sides = options.sides;
     },
 
@@ -433,10 +416,6 @@ phina.namespace(function() {
     },
 
     _accessor: {
-      radius: {
-        get: function() { return this._radius; },
-        set: function(v) { this._dirtyDraw = true; this._radius = v; },
-      },
       sides: {
         get: function() { return this._sides; },
         set: function(v) { this._dirtyDraw = true; this._sides = v; },
@@ -466,7 +445,7 @@ phina.namespace(function() {
       });
       this.superInit(options);
 
-      this.radius = options.radius;
+      this.setBoundingType('circle');
       this.cornerAngle = options.cornerAngle;
     },
 
@@ -491,10 +470,6 @@ phina.namespace(function() {
     },
 
     _accessor: {
-      radius: {
-        get: function() { return this._radius; },
-        set: function(v) { this._dirtyDraw = true; this._radius = v; },
-      },
       cornerAngle: {
         get: function() { return this._cornerAngle; },
         set: function(v) { this._dirtyDraw = true; this._cornerAngle = v; },
