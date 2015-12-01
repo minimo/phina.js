@@ -2,9 +2,19 @@
 
 [![Join the chat at https://gitter.im/phi-jp/phina.js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/phi-jp/phina.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-![image](assets/images/phina.png)
+![image](logo.png)
 
-phina.js
+phina.js is game library.
+
+## Official
+
+http://phinajs.com
+
+
+## Getting Started
+
+[runstant](http://goo.gl/xgyU6f)
+
 
 
 ## for developer
@@ -19,26 +29,14 @@ $cd phina.js
 ### setup
 
 ```
-$npm install
 $npm install -g gulp
+$npm install
 ```
 
 ### build
 
 ```
 $gulp
-```
-
-### watch and build
-
-```
-$gulp watch
-```
-
-### launch
-
-```
-$gulp webserver
 ```
 
 ### develop
@@ -48,8 +46,3 @@ watch and launch
 ```
 $gulp dev
 ```
-
-
-### runstant
-
-http://goo.gl/0ATWNv

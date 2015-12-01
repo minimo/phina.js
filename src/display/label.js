@@ -26,7 +26,7 @@ phina.namespace(function() {
         backgroundColor: 'transparent',
 
         fill: 'black',
-        stroke: '#222',
+        stroke: null,
         strokeWidth: 2,
 
         // 
