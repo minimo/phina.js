@@ -9770,7 +9770,7 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(options) {
-      options.$safe({
+      options = (options || {}).$safe({
         width: 640,
         height: 960,
         columns: 12,
