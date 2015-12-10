@@ -76,6 +76,7 @@ phina.namespace(function() {
 
       // デフォルトアニメーション
       this.animations["default"] = {
+          name: "default",
           frames: [].range(0, this.frame),
           next: "default",
           frequency: 1,
@@ -86,6 +87,7 @@ phina.namespace(function() {
 
         if (anim instanceof Array) {
           this.animations[key] = {
+            name: key,
             frames: [].range(anim[0], anim[1]),
             next: anim[2],
             frequency: anim[3] || 1,
@@ -93,6 +95,7 @@ phina.namespace(function() {
         }
         else {
           this.animations[key] = {
+            name: key,
             frames: anim.frames,
             next: anim.next,
             frequency: anim.frequency || 1
