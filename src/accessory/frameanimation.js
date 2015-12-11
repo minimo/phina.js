@@ -98,7 +98,10 @@ phina.namespace(function() {
             return nul;
           }
         },
-        set: function(name) {return this;}
+        set: function(name) {
+          this.gotoAndPlay(name);
+          return this;
+        }
       },
     },
   });
