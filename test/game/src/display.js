@@ -1,8 +1,21 @@
 th.describe("display.Shape", function() {
 
   th.it('Shape', function() {
-    var shape = phina.display.Shape().addChildTo(this);
+    var shape = phina.display.Shape({
+      backgroundColor: 'red',
+    }).addChildTo(this);
     shape.position.set(100, 100);
+
+    var shape = phina.display.Shape().addChildTo(this);
+    shape.watchDraw = false;
+    shape.canvas.width = 50;
+    shape.canvas.height= 50;
+    shape.canvas.fillStyle = 'blue';
+    shape.canvas.transformCenter();
+    shape.canvas.fillCircle(0, 0, 20);
+
+    shape.x = 200;
+    shape.y = 500;
   });
 
   th.it('CircleShape', function() {
@@ -13,6 +26,8 @@ th.describe("display.Shape", function() {
       shape.radius = 200;
       shape.stroke = false;
       shape.fill = 'blue';
+      shape.shadow = 'red';
+      shape.shadowBlur = 8;
     }, 2000);
   });
 
@@ -28,6 +43,10 @@ th.describe("display.Shape", function() {
       cornerRadius: 8,
     }).addChildTo(this);
     shape.position.set(this.gridX.center(), this.gridY.span(6));
+
+    setTimeout(function() {
+      shape.cornerRadius = 16;
+    }, 2000);
   });
 
   th.it('TriangleShape', function() {
@@ -38,6 +57,10 @@ th.describe("display.Shape", function() {
   th.it('StarShape', function() {
     var shape = phina.display.StarShape().addChildTo(this);
     shape.position.set(this.gridX.center(), this.gridY.span(4));
+
+    setTimeout(function() {
+      shape.sideIndent = 0.9;
+    }, 2000);
   });
 
   th.it('PolygonShape', function() {
@@ -67,6 +90,33 @@ th.describe("display.Shape", function() {
 
 
 th.describe("display.Sprite", function() {
+
+  th.it('init', function() {
+    var path = 'http://dummyimage.com/128x128/f00/fff&text=ABC';
+    phina.asset.Texture().load(path).then(function(tex) {
+      var sprite = phina.display.Sprite(tex, 64, 64).addChildTo(this);
+      sprite.x = 320;
+      sprite.y = 480;
+    }.bind(this));
+  });
+
+  th.it('setImage', function() {
+    phina.asset.AssetLoader().load({
+      image: {
+        'imgA': 'http://dummyimage.com/128x128/f00/fff&text=A',
+        'imgB': 'http://dummyimage.com/128x128/00f/fff&text=B',
+      }
+    }).then(function() {
+      var sprite = phina.display.Sprite('imgA', 64, 64).addChildTo(this);
+      sprite.x = 320;
+      sprite.y = 480;
+
+      this.onpointend = function() {
+        sprite.setImage('imgB');
+      }
+    }.bind(this));
+  });
+
 
   th.it('Sample', function() {
     var path = '../../assets/images/hiyocos.png';
@@ -181,6 +231,7 @@ th.describe("display.Label", function() {
     // 
     var label = phina.display.Label('strokeWidth=8').addChildTo(this);
     label.fill = 'white';
+    label.stroke = 'green';
     label.strokeWidth = 8;
     label.position.set(center, gridY.span(3));
     // 
@@ -247,11 +298,11 @@ th.describe("display.Label", function() {
     var text = 'hoge\nfoo\nbar';
     var label = phina.display.Label(text).addChildTo(this);
     label.backgroundColor = '#aaa';
-    label.position.set(this.gridX.span(4), this.gridX.span(8));
+    label.position.set(this.gridX.span(4), this.gridX.span(6));
     // 
     var label = phina.display.Label(text).addChildTo(this);
     label.backgroundColor = '#aaa';
-    label.position.set(this.gridX.span(12), this.gridX.span(8));
+    label.position.set(this.gridX.span(12), this.gridX.span(6));
 
     var text = 'hoge\nfoo\nbar\nbaz';
     var label = phina.display.Label(text).addChildTo(this);

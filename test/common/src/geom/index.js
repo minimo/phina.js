@@ -11,15 +11,63 @@ describe('#geom', function() {
     });
 
     it('toAngle/fromAngle', function() {
-
       (360).times(function(n) {
         var v = phina.geom.Vector2();
         v.fromAngle(n.toRadian(), 1);
         var degree = v.toAngle().toDegree().floor();
         assert(Math.abs(n-degree) <= 1);
-        // console.log(n, degree);
+      });
+    });
+
+    it('toDegree/fromDegree', function() {
+      (360).times(function(n) {
+        var v = phina.geom.Vector2();
+        v.fromDegree(n);
+        var degree = v.toDegree().floor();
+        assert(Math.abs(n-degree) <= 1);
+      });
+    });
+
+    it('rotate', function() {
+      (-180).step(+180, 1, function(n) {
+        var v = phina.geom.Vector2().fromAngle((n - 1).toRadian());
+        v.rotate((+1).toRadian());
+
+        var deg = Math.abs(n - v.toAngle().toDegree());
+        if (359 < deg) { deg = (deg - 360).abs(); }
+
+        assert(deg < 0.0001);
       });
 
+      (-180).step(+180, 1, function(n) {
+        var v = phina.geom.Vector2().fromAngle((n + 1).toRadian());
+        v.rotate((-1).toRadian());
+
+        var deg = Math.abs(n - v.toAngle().toDegree());
+        if (359 < deg) { deg = (deg - 360).abs(); }
+
+        assert(deg < 0.0001);
+      });
+
+      var center = phina.geom.Vector2(1, 2);
+      (-180).step(+180, 1, function(n) {
+        var v1 = phina.geom.Vector2().fromAngle((n + 1).toRadian()).add(center);
+        var v2 = phina.geom.Vector2().fromAngle((n).toRadian()).add(center);
+
+        v2.rotate((1).toRadian(), center);
+
+        assert(phina.geom.Vector2.distance(v1, v2) < 0.0001);
+      });
+    });
+
+    it('random', function() {
+      var v = phina.geom.Vector2(0, 180).random();
+      console.log(v);
+    });
+
+    it('static.random', function() {
+      var v = phina.geom.Vector2.random();
+      console.log(v);
     });
   });
 

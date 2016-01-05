@@ -146,12 +146,13 @@ phina.namespace(function() {
     /**
      * ランダムベクトルをセット
      */
-    random: function(min, max) {
+    random: function(min, max, len) {
       var degree = phina.util.Random.randfloat(min || 0, max || 360);
       var rad = degree*Math.DEG_TO_RAD;
+      var len = len || 1;
 
-      this.x = Math.cos(rad);
-      this.y = Math.sin(rad);
+      this.x = Math.cos(rad)*len;
+      this.y = Math.sin(rad)*len;
 
       return this;
     },
@@ -180,15 +181,45 @@ phina.namespace(function() {
       var rad = Math.atan2(this.y, this.x);
       return (rad + Math.PI*2)%(Math.PI*2);
     },
-
+    
     /**
-     * 角度(degree)と長さでベクトルをセット
+     * 角度(radian)と長さでベクトルをセット
      */
     fromAngle: function(rad, len) {
       len = len || 1;
       this.x = Math.cos(rad)*len;
       this.y = Math.sin(rad)*len;
       
+      return this;
+    },
+
+    /**
+     * 角度に変換(degree)
+     * @return {Number}
+     */
+    toDegree: function() {
+      return this.toAngle().toDegree();
+    },
+    
+    /**
+     * 角度(degree)と長さでベクトルをセット
+     */
+    fromDegree: function(deg, len) {
+      return this.fromAngle(deg.toRadian(), len);
+    },
+
+    /**
+     * 任意の角度(radian)で回転
+     */
+    rotate: function(rad, center) {
+      center = center || phina.geom.Vector2(0, 0);
+
+      var x1 = this.x - center.x;
+      var y1 = this.y - center.y;
+      var x2 = x1 * Math.cos(rad) - y1 * Math.sin(rad);
+      var y2 = x1 * Math.sin(rad) + y1 * Math.cos(rad);
+      this.set( center.x + x2, center.y + y2 );
+
       return this;
     },
 
@@ -344,14 +375,17 @@ phina.namespace(function() {
           // cos...
       },
 
-      random: function(len, min, max) {
-        min = min || 0;
-        max = max || 360;
-        len = len || 1;
-        return phina.geom.Vector2().setDegree(Math.randfloat(min, max), len);
+      random: function(min, max, len) {
+        return phina.geom.Vector2().random(min, max).mul(len||1);
       },
     },
 
   });
+
+  phina.geom.Vector2.ZERO = phina.geom.Vector2(0, 0);
+  phina.geom.Vector2.LEFT = phina.geom.Vector2(-1, 0);
+  phina.geom.Vector2.RIGHT= phina.geom.Vector2(1, 0);
+  phina.geom.Vector2.UP   = phina.geom.Vector2(0, -1);
+  phina.geom.Vector2.DOWN = phina.geom.Vector2(0, 1);
 
 });
