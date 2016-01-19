@@ -22,7 +22,7 @@ phina.namespace(function() {
         options = arguments[0];
       }
 
-      options = (options || {}).$safe({
+      options = ({}).$safe(options, {
         backgroundColor: 'transparent',
 
         fill: 'black',

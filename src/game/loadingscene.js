@@ -16,7 +16,7 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(options) {
-      options = (options || {}).$safe(phina.game.LoadingScene.defaults);
+      options = ({}).$safe(options, phina.game.LoadingScene.defaults);
       this.superInit(options);
 
       this.fromJSON({
@@ -51,6 +51,7 @@ phina.namespace(function() {
         }.bind(this);
       }
       else {
+        this.gauge.animationTime = 100;
         loader.onprogress = function(e) {
           this.gauge.value = e.progress * 100;
         }.bind(this);

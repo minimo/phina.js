@@ -17,7 +17,7 @@ phina.namespace(function() {
     init: function(params) {
       this.superInit(params);
 
-      params = (params || {}).$safe(phina.game.TitleScene.defaults);
+      params = ({}).$safe(params, phina.game.TitleScene.defaults);
 
       this.backgroundColor = params.backgroundColor;
 
@@ -54,7 +54,7 @@ phina.namespace(function() {
           },
         });
 
-        this.on('pointstart', function() {
+        this.on('pointend', function() {
           this.exit();
         });
       }
