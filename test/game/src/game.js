@@ -1,3 +1,4 @@
+
 th.describe('game.SplashScene', function() {
 
   th.it('default', function() {

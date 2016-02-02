@@ -10,7 +10,7 @@ phina.namespace(function() {
    * 
    */
   phina.define('phina.game.LoadingScene', {
-    superClass: 'phina.display.CanvasScene',
+    superClass: 'phina.display.DisplayScene',
 
     /**
      * @constructor
@@ -61,6 +61,7 @@ phina.namespace(function() {
         if (options.exitType === 'auto') {
           this.app.popScene();
         }
+        this.flare('loaded');
       }.bind(this);
 
       loader.load(options.assets);

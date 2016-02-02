@@ -78,7 +78,7 @@ phina.namespace(function() {
 
       // リサイズ時のリスナとして登録しておく
       if (isEver) {
-        window.addEventListener("resize", _fitFunc, false);
+        phina.global.addEventListener("resize", _fitFunc, false);
       }
     },
 
@@ -416,7 +416,7 @@ phina.namespace(function() {
      */
     polygon: function(x, y, size, sides, offsetAngle) {
       var radDiv = (Math.PI*2)/sides;
-      var radOffset = (offsetAngle!=undefined) ? offsetAngle*Math.PI/180 : -Math.PI/2;
+      var radOffset = (offsetAngle!==undefined) ? offsetAngle*Math.PI/180 : -Math.PI/2;
       
       this.moveTo(x + Math.cos(radOffset)*size, y + Math.sin(radOffset)*size);
       for (var i=1; i<sides; ++i) {
@@ -720,11 +720,6 @@ phina.namespace(function() {
       lineWidth: {
         "get": function()   { return this.context.lineWidth; },
         "set": function(v)  { this.context.lineWidth = v; }
-      },
-
-      lineJoin: {
-        "get": function()   { return this.context.lineJoin; },
-        "set": function(v)  { this.context.lineJoin = v; }
       },
 
       font: {

@@ -18,12 +18,6 @@ phina.namespace(function() {
 
       var scenes = options.scenes || [
         {
-          className: 'LoadingScene',
-          label: 'loading',
-          nextLabel: options.startLabel,
-        },
-
-        {
           className: 'SplashScene',
           label: 'splash',
           nextLabel: 'title',
@@ -44,11 +38,6 @@ phina.namespace(function() {
           label: 'result',
           nextLabel: 'title',
         },
-
-        {
-          className: 'PauseScene',
-          label: 'pause',
-        },
       ];
 
       scenes = scenes.each(function(s) {
@@ -61,16 +50,57 @@ phina.namespace(function() {
       });
 
       if (options.assets) {
-        var loading = LoadingScene(options);
+        var loadingOptions = ({}).$extend(options, {
+          exitType: '',
+        });
+        var loading = LoadingScene(loadingOptions);
         this.replaceScene(loading);
 
-        loading.onexit = function() {
+        loading.onloaded = function() {
           this.replaceScene(scene);
+          if (options.debug) {
+            this._enableDebugger();
+          }
         }.bind(this);
+
       }
       else {
         this.replaceScene(scene);
+        if (options.debug) {
+          this._enableDebugger();
+        }
       }
+
+      // 自動でポーズする
+      if (options.autoPause) {
+        this.on('blur', function() {
+          var pauseScene = phina.game.PauseScene();
+          this.pushScene(pauseScene);
+        });
+      }
+    },
+
+    _enableDebugger: function() {
+      if (this.gui) return ;
+
+      this.enableDatGUI(function(gui) {
+        var f = gui.addFolder('scenes');
+        var funcs = {};
+        this.rootScene.scenes.each(function(scene) {
+          funcs[scene.label] = function() {
+            this.rootScene.replaceScene(scene.label);
+            console.log(this._scenes.length);
+          }.bind(this);
+          return scene;
+        }, this);
+
+        funcs.forIn(function(key, value) {
+          f.add(funcs, key);
+        });
+        f.open();
+
+        this.gui = gui;
+      }.bind(this));
     },
   });
 
