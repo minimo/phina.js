@@ -11,9 +11,10 @@ phina.namespace(function() {
         hover: 'pointer',
       };
 
-      this.app.domElement.addEventListener('mouseover', function() {
-        this.app.domElement.style.cursor = this.cursor.normal;
-      }.bind(this), false);
+      this._holds = [];
+      this.app.on('changescene', function() {
+        this._holds.clear();
+      }.bind(this));
     },
 
     enable: function() {
@@ -26,6 +27,14 @@ phina.namespace(function() {
     },
 
     check: function(root) {
+      // カーソルのスタイルを反映
+      if (this._holds.length > 0) {
+        this.app.domElement.style.cursor = this.cursor.hover;
+      }
+      else {
+        this.app.domElement.style.cursor = this.cursor.normal;
+      }
+
       if (!this._enable) return ;
       this._checkElement(root);
     },
@@ -64,52 +73,46 @@ phina.namespace(function() {
       var overFlag = obj.hitTest(p.x, p.y);
       obj._overFlags[p.id] = overFlag;
 
+      var e = {
+        pointer: p,
+        interactive: this,
+      };
+
       if (!prevOverFlag && overFlag) {
-        obj.flare('pointover', {
-          pointer: p,
-        });
+        obj.flare('pointover', e);
 
         if (obj.boundingType && obj.boundingType !== 'none') {
-          this.app.domElement.style.cursor = this.cursor.hover;
+          this._holds.push(obj);
         }
       }
       if (prevOverFlag && !overFlag) {
-        obj.flare('pointout');
-
-        this.app.domElement.style.cursor = this.cursor.normal;
+        obj.flare('pointout', e);
+        this._holds.erase(obj);
       }
 
       if (overFlag) {
         if (p.getPointingStart()) {
           obj._touchFlags[p.id] = true;
-          obj.flare('pointstart', {
-            pointer: p,
-          });
+          obj.flare('pointstart', e);
           // クリックフラグを立てる
           obj._clicked = true;
         }
       }
 
       if (obj._touchFlags[p.id]) {
-        obj.flare('pointstay', {
-          pointer: p,
-        });
+        obj.flare('pointstay', e);
         if (p._moveFlag) {
-          obj.flare('pointmove', {
-            pointer: p,
-          });
+          obj.flare('pointmove', e);
         }
       }
 
       if (obj._touchFlags[p.id]===true && p.getPointingEnd()) {
         obj._touchFlags[p.id] = false;
-        obj.flare('pointend', {
-          pointer: p,
-        });
+        obj.flare('pointend', e);
 
         if (obj._overFlags[p.id]) {
           obj._overFlags[p.id] = false;
-          obj.flare('pointout');
+          obj.flare('pointout', e);
         }
       }
     },

@@ -21,6 +21,7 @@ phina.namespace(function() {
       this.ss = phina.asset.AssetManager.get('spritesheet', ss);
       this.paused = true;
       this.finished = false;
+      this.fit = true;
     },
 
     update: function() {
@@ -80,14 +81,12 @@ phina.namespace(function() {
 
       var index = anim.frames[this.currentFrameIndex];
       var frame = this.ss.getFrame(index);
-      var target = this.target;
+      this.target.srcRect.set(frame.x, frame.y, frame.width, frame.height);
 
-      target.srcRect.x = frame.x;
-      target.srcRect.y = frame.y;
-      target.srcRect.width = frame.width;
-      target.srcRect.height = frame.height;
-      target.width = frame.width;
-      target.height = frame.height;
+      if (this.fit) {
+        this.target.width = frame.width;
+        this.target.height = frame.height;
+      }
     },
     
     _accessor: {
