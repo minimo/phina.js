@@ -1,3 +1,20 @@
+th.describe("display.PlainElement", function() {
+
+  th.it('init', function() {
+    var elm = phina.display.PlainElement({
+      width: 600,
+      height: 600,
+    }).addChildTo(this);
+    elm.canvas.fillStyle = 'blue';
+    elm.canvas.transformCenter();
+    elm.canvas.clearColor('red');
+    elm.canvas.fillCircle(0, 0, 240);
+
+    elm.x = 320;
+    elm.y = 480;
+  });
+});
+
 th.describe("display.Shape", function() {
 
   th.it('Shape', function() {
@@ -69,8 +86,39 @@ th.describe("display.Shape", function() {
   });
 
   th.it('HeartShape', function() {
-    var shape = phina.display.HeartShape().addChildTo(this);
+    var shape = phina.display.HeartShape({strokeWidth:8}).addChildTo(this);
     shape.position.set(this.gridX.center(), this.gridY.span(4));
+  });
+  
+  th.it('PathShape', function() {
+    var shapeStroke = phina.display.PathShape().addChildTo(this);
+    var shapeFill = phina.display.PathShape({
+      fill:'yellow',
+      stroke:'black',
+      strokeWidth:10,
+      padding:10,
+    }).addChildTo(this);
+    shapeStroke
+    .addPath(-50,-50)
+    .addPath(50,50)
+    .addPath(50,-50)
+    .addPath(-50,50)
+    .addPath(-50,-50);
+  
+    shapeStroke.setPosition(this.gridX.center(), this.gridY.center(-4));
+    
+    shapeFill.addPaths([
+      {x:-100,y:-100},
+      {x:100,y:-100},
+      {x:25,y:-25},
+      {x:75,y:25},
+      {x:-25,y:100},
+      {x:25,y:25},
+      {x:-50,y:-25},
+      {x:0,y:-75},
+      {x:-100,y:-100},
+    ]).setPosition(this.gridX.center(), this.gridY.center(4));
+    
   });
 
   th.it('origin', function() {
