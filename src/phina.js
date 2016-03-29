@@ -266,16 +266,26 @@ phina.namespace(function() {
     }
   });
 
-  if (phina.global.addEventListener) {
+  var doc = phina.global.document;
+  if (phina.global.addEventListener && doc && doc.readyState !== 'complete') {
     phina.global.addEventListener('load', function() {
-      // ちょっと遅延させる(画面サイズ問題)
-      setTimeout(function() {
-        phina._mainListeners.each(function(func) {
+      var run = function() {
+        var listeners = phina._mainListeners.clone();
+        phina._mainListeners.clear();
+        listeners.each(function(func) {
           func();
         });
-        phina._mainListeners.clear();
-        phina._mainLoaded = true;
-      });
+
+        // main 内で main を追加している場合があるのでそのチェック
+        if (phina._mainListeners.length > 0) {
+          run(0);
+        }
+        else {
+          phina._mainLoaded = true;
+        }
+      };
+      // ちょっと遅延させる(画面サイズ問題)
+      setTimeout(run);
     });
   }
   else {

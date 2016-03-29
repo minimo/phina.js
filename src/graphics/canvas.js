@@ -58,9 +58,6 @@ phina.namespace(function() {
         s.top  = "0px";
         s.bottom = "0px";
         s.right = "0px";
-        // チラつき防止
-        // https://drafts.csswg.org/css-images/#the-image-rendering
-        s.imageRendering = 'pixelated';
 
         var rateWidth = e.width/window.innerWidth;
         var rateHeight= e.height/window.innerHeight;
@@ -759,6 +756,11 @@ phina.namespace(function() {
           return null;
         }
       })(),
+
+      measureText: function(font, text) {
+        this._context.font = font;
+        return this._context.measureText(text);
+      },
     },
   });
 });
