@@ -1232,6 +1232,57 @@
       return item;
     }, context);
   });
+  
+  /**
+   * @method most
+   * most関数 最大値と最小値を返す
+   *
+   */
+  Array.prototype.$method("most", function(func, self) {
+    if(this.length < 1){
+      return {
+        max: -Infinity,
+        min: Infinity,
+      };
+    }
+    if(func){
+      var maxValue = -Infinity;
+      var minValue = Infinity;
+      var maxIndex = 0;
+      var minIndex = 0;
+      
+      if(typeof self === 'undefined'){self = this;}
+      
+      for (var i = 0, len = this.length; i < len; ++i) {
+        var v = func.call(self, this[i], i, this);
+        if(maxValue < v){
+          maxValue = v;
+          maxIndex = i;
+        }
+        if(minValue > v){
+          minValue = v;
+          minIndex = i;
+        }
+      }
+      return {
+        max: this[maxIndex],
+        min: this[minIndex],
+      };
+    }
+    else{
+      var max = -Infinity;
+      var min = Infinity;
+      for (var i = 0, len = this.length;i < len; ++i) {
+        if(max<this[i]){max=this[i];}
+        if(min>this[i]){min=this[i];}
+      }
+      return {
+        max: max,
+        min: min,
+      };
+    }
+    
+  });  
 
 })();
 
@@ -6796,11 +6847,13 @@ phina.namespace(function() {
 
     check: function(root) {
       // カーソルのスタイルを反映
-      if (this._holds.length > 0) {
-        this.app.domElement.style.cursor = this.cursor.hover;
-      }
-      else {
-        this.app.domElement.style.cursor = this.cursor.normal;
+      if (this.app.domElement) {
+        if (this._holds.length > 0) {
+          this.app.domElement.style.cursor = this.cursor.hover;
+        }
+        else {
+          this.app.domElement.style.cursor = this.cursor.normal;
+        }
       }
 
       if (!this._enable) return ;
@@ -10391,24 +10444,7 @@ phina.namespace(function() {
         options = arguments[0];
       }
 
-      options = ({}).$safe(options, {
-        backgroundColor: 'transparent',
-
-        fill: 'black',
-        stroke: null,
-        strokeWidth: 2,
-
-        // 
-        text: 'Hello, world!',
-        // 
-        fontSize: 32,
-        fontWeight: '',
-        fontFamily: "'HiraKakuProN-W3'", // Hiragino or Helvetica,
-        // 
-        align: 'center',
-        baseline: 'middle',
-        lineHeight: 1.2,
-      });
+      options = ({}).$safe(options, phina.display.Label.defaults);
 
       this.superInit(options);
 
@@ -10485,6 +10521,27 @@ phina.namespace(function() {
           return "{fontWeight} {fontSize}px {fontFamily}".format(this);
         },
       }
+    },
+
+    _static: {
+      defaults: {
+        backgroundColor: 'transparent',
+
+        fill: 'black',
+        stroke: null,
+        strokeWidth: 2,
+
+        // 
+        text: 'Hello, world!',
+        // 
+        fontSize: 32,
+        fontWeight: '',
+        fontFamily: "'HiraKakuProN-W3'", // Hiragino or Helvetica,
+        // 
+        align: 'center',
+        baseline: 'middle',
+        lineHeight: 1.2,
+      },
     },
 
     _defined: function() {
@@ -11019,25 +11076,14 @@ phina.namespace(function() {
      * @constructor
      */
     init: function(options) {
-      options = (options || {}).$safe({
-        width: 200,
-        height: 80,
-        backgroundColor: 'transparent',
-        fill: 'hsl(200, 80%, 60%)',
-        stroke: null,
-
-        cornerRadius: 8,
-        text: 'Hello',
-        fontColor: 'white',
-        fontSize: 32,
-        fontFamily: "'HiraKakuProN-W3'", // Hiragino or Helvetica,
-      });
+      options = (options || {}).$safe(phina.ui.Button.defaults);
       this.superInit(options);
 
       this.cornerRadius = options.cornerRadius;
       this.text         = options.text;
       this.fontColor    = options.fontColor;
       this.fontSize     = options.fontSize;
+      this.fontWeight     = options.fontWeight;
       this.fontFamily   = options.fontFamily;
 
       this.setInteractive(true);
@@ -11052,12 +11098,29 @@ phina.namespace(function() {
     postrender: function(canvas) {
       var context = canvas.context;
       // text
-      var font = "{fontSize}px {fontFamily}".format(this);
+      var font = "{fontWeight} {fontSize}px {fontFamily}".format(this);
       context.font = font;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = this.fontColor;
       context.fillText(this.text, 0, 0);
+    },
+
+    _static: {
+      defaults: {
+        width: 200,
+        height: 80,
+        backgroundColor: 'transparent',
+        fill: 'hsl(200, 80%, 60%)',
+        stroke: null,
+
+        cornerRadius: 8,
+        text: 'Hello',
+        fontColor: 'white',
+        fontSize: 32,
+        fontWeight: '',
+        fontFamily: "'HiraKakuProN-W3'", // Hiragino or Helvetica,
+      },
     },
 
     _defined: function() {
@@ -11309,7 +11372,7 @@ phina.namespace(function() {
       var cache = textWidthCache[this.font];
       return cache || (textWidthCache[this.font] = {});
     },
-
+    
     getLines: function() {
       if (this._lineUpdate === false) {
         return this._lines;
@@ -11322,46 +11385,65 @@ phina.namespace(function() {
 
       var rowWidth = this.width;
 
+      var context = this.canvas.context;
+      context.font = this.font;
       //どのへんで改行されるか目星つけとく
-      var index = rowWidth / phina.graphics.Canvas.measureText(this.font, 'あ').width | 0;
+      var pos = rowWidth / context.measureText('あ').width | 0;
 
       var cache = this.getTextWidthCache();
-      for (var i = lines.length; i--;) {
-        var text = lines[i],
-            len,
-            j = 0,
-            width,
-            breakFlag = false,
-            char;
+      for (var i = lines.length - 1; 0 <= i; --i) {
+        var text = lines[i];
+        if (text === '') {
+          continue;
+        }
 
-        if (text === '') { continue;}
-
+        var j = 0;
+        var breakFlag = false;
+        var char;
         while (true) {
           //if (rowWidth > (cache[text] || (cache[text] = dummyContext.measureText(text).width))) break;
 
-          len = text.length;
-          if (index >= len) index = len - 1;
+          var len = text.length;
+          if (pos >= len) pos = len - 1;
+          char = text.substring(0, pos);
+          if (!cache[char]) {
+            cache[char] = context.measureText(char).width;
+          }
+          var textWidth = cache[char];
 
-          width = cache[char = text.substring(0, index)] || (cache[char] = phina.graphics.Canvas.measureText(this.font, char).width);
+          if (rowWidth < textWidth) {
+            do {
+              char = text[--pos];
+              if (!cache[char]) {
+                cache[char] = context.measureText(char).width;
+              }
+              textWidth -= cache[char];
+            } while (rowWidth < textWidth);
 
-          if (rowWidth < width) {
-            while (rowWidth < (width -= cache[char = text[--index]] || (cache[char] = phina.graphics.Canvas.measureText(this.font, char).width)));
           } else {
-            while (rowWidth >= (width += cache[char = text[index++]] || (cache[char] = phina.graphics.Canvas.measureText(this.font, char).width))) {
-              if (index >= len) {
+
+            do {
+              char = text[pos++];
+              if (pos >= len) {
                 breakFlag = true;
                 break;
               }
-            }
-            --index;
+              if (!cache[char]) {
+                cache[char] = context.measureText(char).width;
+              }
+              textWidth += cache[char];
+            } while (rowWidth >= textWidth);
+
+            --pos;
           }
           if (breakFlag) {
             break;
           }
-          //index が 0 のときは無限ループになるので、1にしとく
-          if (index === 0) index = 1;
+          //0 のときは無限ループになるので、1にしとく
+          if (pos === 0) pos = 1;
 
-          lines.splice(i + j++, 1, text.substring(0, index), text = text.substring(index, len));
+          lines.splice(i + j, 1, text.substring(0, pos), text = text.substring(pos, len));
+          ++j;
         }
 
       }
