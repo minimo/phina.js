@@ -218,8 +218,8 @@
   });
 
   /**
-   * @method  $omit
-   * オミット
+   * @method  $toArray
+   * 配列化
    */
   Object.prototype.$method("$toArray", function() {
     return Array.prototype.slice.call(this);
