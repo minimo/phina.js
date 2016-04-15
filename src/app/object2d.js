@@ -17,16 +17,18 @@ phina.namespace(function() {
     /** 基準位置 */
     origin: null,
 
-
     /**
      * @constructor
      */
-    init: function() {
+    init: function(options) {
       this.superInit();
-      
-      this.position = phina.geom.Vector2(0, 0);
-      this.scale    = phina.geom.Vector2(1, 1);
-      this.origin   = phina.geom.Vector2(0.5, 0.5);
+
+      options = ({}).$safe(options, phina.app.Object2D.defaults);
+
+      this.position = phina.geom.Vector2(options.x, options.y);
+      this.scale    = phina.geom.Vector2(options.scaleX, options.scaleY);
+      this.rotation = options.rotation;
+      this.origin   = phina.geom.Vector2(options.originX, options.originY);
 
       this._matrix = phina.geom.Matrix33().identity();
       this._worldMatrix = phina.geom.Matrix33().identity();
@@ -35,10 +37,10 @@ phina.namespace(function() {
       this._overFlags = {};
       this._touchFlags = {};
 
-      this.width = 64;
-      this.height = 64;
-      this.radius = 32;
-      this.boundingType = 'rect';
+      this.width = options.width;
+      this.height = options.height;
+      this.radius = options.radius;
+      this.boundingType = options.boundingType;
     },
 
     /**
@@ -411,7 +413,24 @@ phina.namespace(function() {
           // TODO: どうしようかな??
         }
       },
-    }
+    },
+    _static: {
+      defaults: {
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+        originX: 0.5,
+        originY: 0.5,
+        
+        width: 64,
+        height: 64,
+        radius: 32,
+        boundingType: 'rect',
+      },
+    },
+
   });
 
   

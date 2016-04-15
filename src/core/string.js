@@ -41,7 +41,15 @@
     else {
       var args = arguments;
       /** @ignore */
-      rep_fn = function(m, k) { return args[ parseInt(k) ]; };
+      rep_fn = function(m, k) {
+        var v = args[ parseInt(k) ];
+        if (v !== undefined && v !== null) {
+          return v;
+        }
+        else {
+          return '';
+        }
+      };
     }
     
     return this.replace( /\{(\w+)\}/g, rep_fn );
@@ -111,7 +119,7 @@
   String.prototype.$method("padding", function(n, ch) {
     var str = this.toString();
     n  = n-str.length;
-    ch = ch || ' ';
+    ch = (ch || ' ')[0];
     
     while(n-- > 0) { str = ch + str; }
     
@@ -125,7 +133,7 @@
   String.prototype.$method("paddingLeft", function(n, ch) {
     var str = this.toString();
     n  = n-str.length;
-    ch = ch || ' ';
+    ch = (ch || ' ')[0];
     
     while(n-- > 0) { str = ch + str; }
     
@@ -139,7 +147,7 @@
   String.prototype.$method("paddingRight", function(n, ch) {
     var str = this.toString();
     n  = n-str.length;
-    ch = ch || ' ';
+    ch = (ch || ' ')[0];
     
     while(n-- > 0) { str = str + ch; }
     
