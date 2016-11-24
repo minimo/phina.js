@@ -6465,7 +6465,8 @@ phina.namespace(function() {
     _loop: false,
     _loopStart: 0,
     _loopEnd: 0,
-
+    _playbackRate: 1,
+    
     /**
      * @constructor
      */
@@ -6475,30 +6476,28 @@ phina.namespace(function() {
       this.gainNode = this.context.createGain();
     },
 
-    play: function() {
+    play: function(when, offset, duration) {
       if (this.source) {
         // TODO: キャッシュする？
       }
 
-      this.source = this.context.createBufferSource();
-      this.source.buffer = this.buffer;
-      this.source.loop = this._loop;
-      this.source.loopStart = this._loopStart;
-      this.source.loopEnd = this._loopEnd;
+      var source = this.source = this.context.createBufferSource();
+      var buffer = source.buffer = this.buffer;
+      source.loop = this._loop;
+      source.loopStart = this._loopStart;
+      source.loopEnd = this._loopEnd;
+      source.playbackRate.value = this._playbackRate;
 
       // connect
-      this.source.connect(this.gainNode);
-      this.gainNode.connect(this.context.destination);
+      source.connect(this.gainNode);
+      this.gainNode.connect(phina.asset.Sound.getMasterGain());
       // play
-      this.source.start(0);
+      source.start(when ? when + this.context.currentTime : 0, offset || 0, duration);
       
       // check play end
-      if (this.source.buffer) {
-        var time = (this.source.buffer.duration/this.source.playbackRate.value)*1000;
-        window.setTimeout(function(self) {
-          self.flare('ended');
-        }, time, this);
-      }
+      source.addEventListener('ended', function(){
+        this.flare('ended');
+      }.bind(this));
 
       return this;
     },
@@ -6506,20 +6505,24 @@ phina.namespace(function() {
     stop: function() {
       // stop
       if (this.source) {
+        // stop すると source.endedも発火する
         this.source.stop && this.source.stop(0);
         this.source = null;
+        this.flare('stop');
       }
 
       return this;
     },
 
     pause: function() {
-      this.source.disconnect();
+      this.source.playbackRate.value = 0;
+      this.flare('pause');
       return this;
     },
 
     resume: function() {
-      this.source.connect(this.gainNode);
+      this.source.playbackRate.value = this._playbackRate;
+      this.flare('resume');
       return this;
     },
 
@@ -6569,6 +6572,11 @@ phina.namespace(function() {
     },
     setLoopEnd: function(loopEnd) {
       this.loopEnd = loopEnd;
+      return this;
+    },
+    
+    setPlaybackRate: function(playbackRate) {
+      this.playbackRate = playbackRate;
       return this;
     },
 
@@ -6687,9 +6695,40 @@ phina.namespace(function() {
           if (this.source) this.source._loopEnd = v;
         },
       },
+      playbackRate: {
+        get: function() { return this._playbackRate; },
+        set: function(v) {
+          this._playbackRate = v;
+          if(this.source && this.source.playbackRate.value !== 0){
+            this.source.playbackRate.value = v;
+          }
+        },
+      }
     },
 
+    _defined: function() {
+      this.accessor('volume', {
+        get: function() {
+          return this.getMasterGain().gain.value;
+        },
+        set: function(v) {
+          this.getMasterGain().gain.value = v;
+        },
+      });
+      
+    },
+    
     _static: {
+      
+      getMasterGain: function() {
+        if(!this._masterGain) {
+          var context = this.getAudioContext();
+          this._masterGain = context.createGain();
+          this._masterGain.connect(context.destination);
+        }
+        return this._masterGain;
+      },
+      
       getAudioContext: function() {
         if (!phina.util.Support.webAudio) return null;
 
@@ -6734,11 +6773,11 @@ phina.namespace(function() {
       muteFlag: false,
       currentMusic: null,
 
-      play: function(name) {
+      play: function(name, when, offset, duration) {
         var sound = phina.asset.AssetManager.get('sound', name);
 
         sound.volume = this.getVolume();
-        sound.play();
+        sound.play(when, offset, duration);
 
         return sound;
       },
@@ -6783,7 +6822,7 @@ phina.namespace(function() {
         return this.muteFlag;
       },
 
-      playMusic: function(name, fadeTime, loop) {
+      playMusic: function(name, fadeTime, loop, when, offset, duration) {
         loop = (loop !== undefined) ? loop : true;
 
         if (this.currentMusic) {
@@ -6793,7 +6832,7 @@ phina.namespace(function() {
         var music = phina.asset.AssetManager.get('sound', name);
 
         music.setLoop(loop);
-        music.play();
+        music.play(when, offset, duration);
 
         if (fadeTime > 0) {
           var count = 32;
