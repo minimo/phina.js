@@ -1,5 +1,5 @@
 /* 
- * phina.js 0.2.1
+ * phina.js 0.2.3
  * phina.js is a game library in javascript
  * MIT Licensed
  * 
@@ -2322,7 +2322,7 @@ var phina = phina || {};
   /**
    * バージョン
    */
-  phina.VERSION = '0.2.1';
+  phina.VERSION = '0.2.3';
 
   /**
    * @method isNode
@@ -5286,11 +5286,16 @@ phina.namespace(function() {
       this.frame = 0;
       this.deltaTime = 0;
       this.elapsedTime = 0;
+      this.isPlaying = true;
       this.runner = phina.util.Ticker.runner;
     },
 
     tick: function(func) {
       this.on('tick', func);
+    },
+
+    untick: function(func) {
+      this.off('tick', func);
     },
 
     run: function() {
@@ -5318,12 +5323,13 @@ phina.namespace(function() {
 
     start: function() {
       var self = this;
-
+      this.isPlaying = true;
       this.startTime = this.currentTime = (new Date()).getTime();
-      var runner = self.runner;
       var fn = function() {
-        var delay = self.run();
-        runner(fn, delay);
+        if (self.isPlaying) {
+          var delay = self.run();
+          self.runner(fn, delay);
+        }
       };
       fn();
 
@@ -5335,7 +5341,8 @@ phina.namespace(function() {
     },
 
     stop: function() {
-      // TODO: 
+      this.isPlaying = false;
+      return this;
     },
 
     rewind: function() {
@@ -7590,14 +7597,19 @@ phina.namespace(function() {
 
       var self = this;
       this.domElement.addEventListener('mousedown', function(e) {
-        self._start(e.pointX, e.pointY, 1<<e.flags);
+        self._start(e.pointX, e.pointY, 1<<e.button);
       });
 
       this.domElement.addEventListener('mouseup', function(e) {
-        self._end(1<<e.flags);
+        self._end(1<<e.button);
       });
       this.domElement.addEventListener('mousemove', function(e) {
         self._move(e.pointX, e.pointY);
+      });
+
+      // マウスがキャンバス要素の外に出た場合の対応
+      this.domElement.addEventListener('mouseout', function(e)  {
+        self._end(1);
       });
     },
 
@@ -9194,13 +9206,19 @@ phina.namespace(function() {
 
     run: function() {
       var self = this;
-
-      this.ticker.tick(function() {
+      this._loopCaller = function() {
         self._loop();
-      });
+      };
+      this.ticker.tick(this._loopCaller);
 
       this.ticker.start();
 
+      return this;
+    },
+
+    kill: function() {
+      this.ticker.stop();
+      this.ticker.untick(this._loopCaller);
       return this;
     },
 
@@ -9325,9 +9343,8 @@ phina.namespace(function() {
 
     _loop: function() {
       this._update();
-      this._draw();
-
       this.interactive.check(this.currentScene);
+      this._draw();
 
       // stats update
       if (this.stats) this.stats.update();
@@ -11032,9 +11049,11 @@ phina.namespace(function() {
     gotoAndPlay: function(name, keep) {
       keep = (keep !== undefined) ? keep : true;
       if (keep && name === this.currentAnimationName
-               && this.currentFrameIndex < this.currentAnimation.frames.length) {
+               && this.currentFrameIndex < this.currentAnimation.frames.length
+               && !this.paused) {
         return this;
       }
+      this.currentAnimationName = name;
       this.frame = 0;
       this.currentFrameIndex = 0;
       this.currentAnimation = this.ss.getAnimation(name);
@@ -11046,6 +11065,7 @@ phina.namespace(function() {
     },
 
     gotoAndStop: function(name) {
+      this.currentAnimationName = name;
       this.frame = 0;
       this.currentFrameIndex = 0;
       this.currentAnimation = this.ss.getAnimation(name);
@@ -13669,28 +13689,16 @@ phina.namespace(function() {
     superClass: 'phina.display.Shape',
 
     init: function(options) {
-      options = ({}).$safe(options, {
-        width: 256,
-        height: 32,
-        backgroundColor: 'transparent',
-        fill: 'white',
-        stroke: '#aaa',
-        strokeWidth: 4,
-
-        value: 100,
-        maxValue: 100,
-        gaugeColor: '#44f',
-        cornerRadius: 0,
-      });
-
+      options = ({}).$safe(options || {}, Gauge.defaults);
+      
       this.superInit(options);
 
-      this._value = options.value;
+      this._value = (options.value !== undefined) ? options.value : options.maxValue;
       this.maxValue = options.maxValue;
       this.gaugeColor = options.gaugeColor;
       this.cornerRadius = options.cornerRadius;
 
-      this.visualValue = options.value;
+      this.visualValue = (options.value !== undefined) ? options.value : options.maxValue;
       this.animation = true;
       this.animationTime = 1*1000;
     },
@@ -13710,7 +13718,7 @@ phina.namespace(function() {
     },
 
     setValue: function(value) {
-      value = Math.clamp(value, 0, this._maxValue);
+      value = Math.clamp(value, 0, this.maxValue);
 
       // end when now value equal value of argument
       if (this.value === value) return ;
@@ -13787,6 +13795,20 @@ phina.namespace(function() {
       phina.display.Shape.watchRenderProperty.call(this, 'gaugeColor');
       phina.display.Shape.watchRenderProperty.call(this, 'cornerRadius');
     },
+    
+    _static: {
+      defaults: {
+        width: 256,
+        height: 32,
+        backgroundColor: 'transparent',
+        fill: 'white',
+        stroke: '#aaa',
+        strokeWidth: 4,
+        maxValue: 100,
+        gaugeColor: '#44f',
+        cornerRadius: 0,
+      },
+    }
   });
 
 });
@@ -13826,7 +13848,7 @@ phina.namespace(function() {
       var end = (Math.PI*2)*rate;
       this.startAngle = 0;
       this.endAngle = end;
-      
+
       this.canvas.rotate(-Math.PI*0.5);
       this.canvas.scale(1, -1);
     },
@@ -14929,8 +14951,6 @@ phina.namespace(function() {
 
 phina.namespace(function() {
 
-  var BASE_URL = 'http://';
-
   /**
    * @class phina.social.Twitter
    * 
@@ -14939,11 +14959,11 @@ phina.namespace(function() {
     /**
      * @constructor
      */
-    init: function(options) {
+    init: function() {
     },
 
     _static: {
-      baseURL: 'http://twitter.com/intent',
+      baseURL: 'https://twitter.com/intent',
       defaults: {
         // type: 'tweet',
         text: 'Hello, world!',
