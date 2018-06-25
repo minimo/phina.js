@@ -281,6 +281,59 @@ phina.namespace(function() {
       /**
        * @static
        * @method
+       * rgb を hsl に変換
+       */
+      RGBtoHSL: function(r, g, b) {
+        var _r = r / 255;
+        var _g = g / 255;
+        var _b = b / 255;
+
+        var max = Math.max(_r, _g, _b);
+        var min = Math.min(_r, _g, _b);
+        var delta = max - min;
+
+        var h = 0;
+        if (delta === 0) {
+          h = 0;
+        } else {
+          if (max === _r) {
+            h = (_g - _b) / delta * 60;
+          } else if (max === _g) {
+            h = (_b - _r) / delta * 60 + 120;
+          } else {
+            h = (_r - _g) / delta * 60 + 240;
+          }
+        }
+        h %= 360;
+        h += 360;
+        h %= 360;
+
+        var l = (max + min) / 2;
+
+        var s = 0;
+        if (delta === 0) {
+          s = 0;
+        } else {
+          s = delta / (1 - Math.abs(2 * l - 1));
+        }
+
+        return [h, s * 100, l * 100];
+      },
+
+      /**
+       * @static
+       * @method
+       * rgba を hsla に変換
+       */
+      RGBAtoHSLA: function(r, g, b, a) {
+        var temp = phina.util.Color.RGBtoHSL(r, g, b);
+        temp[3] = a;
+        return temp;
+      },
+
+      /**
+       * @static
+       * @method
        * rgb 値を作成
        */
       createStyleRGB: function(r, g, b) {
