@@ -23,6 +23,7 @@ phina.namespace(function() {
       }
 
       var self = this;
+      this.domElement.crossOrigin = 'anonymous'; // クロスオリジン解除
       this.domElement.onload = function(e) {
         self.loaded = true;
         resolve(self);
