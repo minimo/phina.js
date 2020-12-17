@@ -334,7 +334,8 @@ export class Vector2 {
    * @return {String} JSON 文字列
    */
   toString() {
-    return "{x:{x}, y:{y}}".format(this);
+    return format.call("{x:{x}, y:{y}}", this);
+    // return "{x:{x}, y:{y}}".format(this);
   }
 
   /**
