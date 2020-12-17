@@ -422,7 +422,8 @@ export class Tweener extends Accessory {
       this._update(app);
     }
     else if (task.type === 'set') {
-      this.target.$extend(task.data.values);
+      $extend.call(this.target, task.data.values);
+      // this.target.$extend(task.data.values);
       // 1フレーム消費しないよう再帰
       this._update(app);
     }
