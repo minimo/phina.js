@@ -1,20 +1,29 @@
 import { Input } from "./input"
 import { pointX, pointY } from "../dom/event"
-import { touchPointX, touchPointY } from "../dom/event"
+import { 
+  touchPointX, 
+  touchPointY, 
+  stop as eventStop // window.stopとかぶるので念のため回避
+} from "../dom/event"
 
 /**
  * @class phina.input.Touch
- * @extends phina.input.Input
+ * _extends phina.input.Input
  */
 export class Touch extends Input {
 
   /**
    * @constructor
+   * @param {HTMLCanvasElement} domElement
+   * @param {boolean} [isMulti]
    */
   constructor(domElement, isMulti) {
     super(domElement);
 
     this.id = null;
+
+    /** @type {boolean} */
+    this.released = undefined
 
     if (isMulti === true) {
       return ;
@@ -22,7 +31,7 @@ export class Touch extends Input {
 
     var self = this;
     this.domElement.addEventListener('touchstart', function(e) {
-      self._start(touchPointX.get.call(e), touchPointY.get.call(e), true);
+      self._start(touchPointX.get.call(e), touchPointY.get.call(e));
       // self._start(e.pointX, e.pointY, true);
     });
 
@@ -37,6 +46,7 @@ export class Touch extends Input {
 
   /**
    * タッチしているかを判定
+   * @returns {boolean}
    */
   getTouch() {
     return this.now != 0;
@@ -44,6 +54,7 @@ export class Touch extends Input {
   
   /**
    * タッチ開始時に true
+   * @returns {boolean}
    */
   getTouchStart() {
     return this.start != 0;
@@ -51,6 +62,7 @@ export class Touch extends Input {
   
   /**
    * タッチ終了時に true
+   * @returns {boolean}
    */
   getTouchEnd() {
     return this.end != 0;
@@ -80,10 +92,16 @@ Touch.prototype.getPointingEnd     = Touch.prototype.getTouchEnd;
  */
 export class TouchList {
 
+  /**
+   * @param {HTMLCanvasElement} domElement
+   */
   constructor(domElement) {
     this.domElement = domElement;
 
+    /** @type {Touch[]} */
     this.touches = [];
+
+    /** @type {{[id:number]: Touch}} */
     var touchMap = this.touchMap = {};
 
     // 32bit 周期でIDをループさせる
@@ -114,7 +132,7 @@ export class TouchList {
         touch._move(pointX.get.call(t), pointY.get.call(t));
         // touch._move(t.pointX, t.pointY);
       });
-      e.stop();
+      eventStop.call(e)
     });
 
     // iPhone では 6本指以上タッチすると強制的にすべてのタッチが解除される
@@ -126,10 +144,14 @@ export class TouchList {
         touch._end();
         delete touchMap[id];
       });
-      e.stop();
+      eventStop.call(e)
     });
   }
 
+  /**
+   * 空のTouchクラスを生成して追加、返す
+   * @returns {Touch}
+   */
   getEmpty() {
     var touch = new Touch(this.domElement, true);
   
@@ -139,15 +161,26 @@ export class TouchList {
     return touch;
   }
 
+  /**
+   * @param {string | number} id
+   * @returns {Touch}
+   */
   getTouch(id) {
     return this.touchMap[id];
   }
 
+  /**
+   * @param {Touch} touch
+   * @returns {void}
+   */
   removeTouch(touch) {
     var i = this.touches.indexOf(touch);
     this.touches.splice(i, 1);
   }
 
+  /**
+   * @returns {void}
+   */
   update() {
     this.touches.forEach(function(touch) {
       if (!touch.released) {

@@ -11,7 +11,19 @@ import { PauseScene } from "./pausescene";
 import { ResultScene } from "./resultscene";
 
 /**
- * デフォルトのain class
+ * @typedef {{
+ *   assets?: import("../asset/assetloader").AssetLoaderLoadParam
+ *   scenes?: import("./managerscene").SceneData[]
+ *   startLabel?: import("../app/scene").SceneLabel
+ *   autoPause?: boolean
+ *   debug?: boolean
+ *   loadingScene?: typeof DisplayScene
+ *   pauseScene?: typeof DisplayScene
+ * } & import("../display/canvasapp").CanvasAppOptions } GameAppOptions
+ */
+
+/**
+ * デフォルトのmain class
  */
 class DefaultMainScene extends DisplayScene {
   constructor(options) {
@@ -21,27 +33,29 @@ class DefaultMainScene extends DisplayScene {
 };
 
 /**
- * クラスがphina.defineによって定義されているかどうかを返します
- * 
+ * クラスがphina.defineによって定義（グローバルに定義）されているかどうかをチェック
  * @param {string} className クラス名。phina.game[className]で定義されているかも調べる
- * @return {string|boolean} 定義されてればそのままクラス名文字列を返す
+ * @returns {boolean}
  */
 function isGameClassDefined(className) {
   if (
     typeof phina.using(className) === 'function'
     || typeof phina.using('phina.game.' + className) === 'function'
   ) {
-    return className
+    return true
   }
   return false;
 }
 
 /**
  * @class phina.game.GameApp
- * @extends phina.display.CanvasApp
+ * _extends phina.display.CanvasApp
  */
 export class GameApp extends CanvasApp {
 
+  /**
+   * @param {GameAppOptions} options
+   */
   constructor(options) {
     options = $safe.call(options || {}, {
     // options = (options || {}).$safe({
@@ -49,26 +63,29 @@ export class GameApp extends CanvasApp {
     });
     super(options);
 
+    /** @type {any} dat.GUIインスタンス */
+    this.gui = undefined
+
     var startLabel = options.startLabel || 'title';
 
     var scenes = options.scenes || [
       {
-        className: isGameClassDefined("SplashScene") || SplashScene,
+        className: isGameClassDefined("SplashScene") ? "SplashScene" : SplashScene,
         label: 'splash',
         nextLabel: 'title',
       },
       {
-        className: isGameClassDefined("TitleScene") || TitleScene,
+        className: isGameClassDefined("TitleScene") ? "TitleScene" : TitleScene,
         label: 'title',
         nextLabel: 'main',
       },
       {
-        className: isGameClassDefined("MainScene") || DefaultMainScene,
+        className: isGameClassDefined("MainScene") ? "MainScene" : DefaultMainScene,
         label: 'main',
         nextLabel: 'result',
       },
       {
-        className: isGameClassDefined("ResultScene") || ResultScene,
+        className: isGameClassDefined("ResultScene") ? "ResultScene" : ResultScene,
         label: 'result',
         nextLabel: 'title',
       },
@@ -125,20 +142,28 @@ export class GameApp extends CanvasApp {
         var pauseScene = (typeof definedPauseScene === 'function') 
           ? definedPauseScene() 
           : (options.pauseScene) 
-            ? new options.pauseScene() 
+            ? new options.pauseScene(options) 
             : new PauseScene()
         this.pushScene(pauseScene);
       });
     }
   }
 
+  /**
+   * @private
+   */
   _enableDebugger() {
     if (this.gui) return ;
 
-    this.enableDatGUI(function(gui) {
+    this.enableDatGUI(
+    /**
+     * @this {GameApp}
+     * @param {{ addFolder: (arg0: string) => any; }} gui Dat.guiインスタンス
+     */
+    function(gui) {
       var f = gui.addFolder('scenes');
       var funcs = {};
-      this.rootScene.scenes.forEach(function(scene) {
+      each.call(/** @type {ManagerScene} */(this.rootScene).scenes, function(scene) {
       // this.rootScene.scenes.each(function(scene) {
         funcs[scene.label] = function() {
           this.rootScene.replaceScene(scene.label);
@@ -156,5 +181,4 @@ export class GameApp extends CanvasApp {
       this.gui = gui;
     }.bind(this));
   }
-
 }
