@@ -1,4 +1,13 @@
 export {default as phina} from "./phina";
+
+export * as ObjectEx from "./core/object";
+export * as ArrayEx from "./core/array";
+export * as ArrayExStatic from "./core/array-static";
+export * as NumberEx from "./core/number";
+export * as StringEx from "./core/string";
+export * as dateEx from "./core/date";
+export * as dateExStatic from "./core/date-static";
+export * as MathEx from "./core/math";
 export * from "./extendBuiltIn";
 
 export * from "./util/eventdispatcher";
@@ -26,7 +35,7 @@ export * from "./input/input";
 export * from "./input/keyboard";
 export * from "./input/mouse";
 export * from "./input/touch";
-export * from "./input/gamepad";
+export { GamepadManager, PhinaGamepad as Gamepad } from "./input/gamepad";
 export * from "./input/accelerometer";
 
 export * from "./app/updater";
@@ -62,6 +71,7 @@ export * from "./asset/texture";
 export * from "./asset/spritesheet";
 export * from "./asset/font";
 export * from "./asset/script";
+export * from "./asset/sound";
 export * from "./asset/soundmanager";
 
 export * from "./ui/button";

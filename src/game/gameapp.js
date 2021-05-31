@@ -11,15 +11,25 @@ import { PauseScene } from "./pausescene";
 import { ResultScene } from "./resultscene";
 
 /**
+ * デフォルトシーンのオプション統合型
+ * @typedef { import("./titlescene").TitleSceneOptions
+ * & import("./pausescene").PauseSceneOptions
+ * & import("./resultscene").ResultSceneOptions
+ * & import("../game/loadingscene").LoadingSceneOptions
+ * } DefaultSceneOptions
+ */
+
+/**
  * @typedef {{
- *   assets?: import("../asset/assetloader").AssetLoaderLoadParam
  *   scenes?: import("./managerscene").SceneData[]
  *   startLabel?: import("../app/scene").SceneLabel
  *   autoPause?: boolean
  *   debug?: boolean
  *   loadingScene?: typeof DisplayScene
  *   pauseScene?: typeof DisplayScene
- * } & import("../display/canvasapp").CanvasAppOptions } GameAppOptions
+ * } 
+ * & import("../display/canvasapp").CanvasAppOptions
+ * } GameAppOptions
  */
 
 /**
@@ -52,15 +62,14 @@ function isGameClassDefined(className) {
  * _extends phina.display.CanvasApp
  */
 export class GameApp extends CanvasApp {
-
   /**
-   * @param {GameAppOptions} options
+   * @param {GameAppOptions & DefaultSceneOptions} [options]
    */
   constructor(options) {
-    options = $safe.call(options || {}, {
+    options = /** @type {GameAppOptions} */($safe.call(options || {}, {
     // options = (options || {}).$safe({
       startLabel: 'title',
-    });
+    }));
     super(options);
 
     /** @type {any} dat.GUIインスタンス */
@@ -182,3 +191,8 @@ export class GameApp extends CanvasApp {
     }.bind(this));
   }
 }
+
+/**
+ * Appクラス統合型
+ * @typedef {import('../app/baseapp').BaseApp | import('../display/domapp').DomApp | import('../display/canvasapp').CanvasApp | GameApp} AppUnion
+ */

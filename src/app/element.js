@@ -37,10 +37,10 @@ export class Element extends EventDispatcher {
     super();
 
     /**
-     * @type {ElementBasedObject}
+     * @type {ElementBasedObject | null}
      * 親要素
      */
-    this.parent = null
+    this.parent = null;
 
     /**
      * @type {ElementBasedObject[]}
@@ -56,9 +56,9 @@ export class Element extends EventDispatcher {
 
     /**
      * @type {boolean}
-     * クリック処理用フラグ
+     * 要素クリック管理用フラグ
      */
-    this._clicked = undefined;
+    this._clicked = false;
 
     /**
      * @type {import('../accessory/accessory').Accessory[]}
@@ -261,7 +261,7 @@ export class Element extends EventDispatcher {
   /**
    * @virtual
    * 更新用仮想関数
-   * @param {AppUnion} [_app] アプリケーションクラス
+   * @param {import("../game/gameapp").AppUnion} [_app] アプリケーションクラス
    * @returns {any}
    */
   update(_app) {}
@@ -284,7 +284,7 @@ export class Element extends EventDispatcher {
    * 
    * @typedef {{
    *   children?: fromJSONData
-   *   className?: string | Constructable
+   *   className?: string | (new (...args: any)=> any)
    *   arguments?: any
    *   [otherProp: string]: any
    * }} fromJSONData

@@ -28,16 +28,34 @@ export class Accessory extends EventDispatcher {
   constructor(target) {
     super();
 
-    /** @type {AccessoryTarget} */
+    /**
+     * 操作対象
+     * @type {AccessoryTarget | undefined}
+     */
     this.target = target;
   }
 
   /**
+   * 更新関数
+   * アタッチしたtargetのenterframeイベントを経由して
+   * 毎フレーム実行される
+   * 
+   * 主にサブクラスで拡張してAccessoryとしての特徴づけを行う
+   * 
+   * @virtual
+   * @protected
+   * @param {*} _app Appクラスインスタンス
+   */
+  update(_app) {}
+
+  /**
+   * 操作対象を設定
+   * 
    * @param {AccessoryTarget} target
    * @returns {this}
    */
   setTarget(target) {
-    if (this.target === target) return ;
+    if (this.target === target) return this;
 
     this.target = target;
     return this;
@@ -45,7 +63,8 @@ export class Accessory extends EventDispatcher {
 
   /**
    * アタッチ対象を返す
-   * @returns {AccessoryTarget}
+   * 
+   * @returns {AccessoryTarget | undefined}
    */
   getTarget() {
     return this.target;
@@ -53,6 +72,7 @@ export class Accessory extends EventDispatcher {
 
   /**
    * アタッチ対象が存在するかどうか
+   * 
    * @returns {boolean}
    */
   isAttached() {
@@ -61,6 +81,7 @@ export class Accessory extends EventDispatcher {
 
   /**
    * 対象に自身をアタッチさせる
+   * 
    * @template {AccessoryAttachable} T
    * @param {T} element
    * @returns {this}
@@ -72,12 +93,14 @@ export class Accessory extends EventDispatcher {
   }
 
   /**
-   * アタッチを外す
+   * targetに自身へのアタッチを外させ、target参照を切る
+   * 
    * @returns {void}
    */
   remove() {
+    if (!this.target) return;
     this.target.detach(this);
-    this.target = null;
+    this.target = undefined;
   }
 
 }
